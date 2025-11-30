@@ -4,7 +4,9 @@ A modern web application for converting PDFs to multiple formats using various s
 
 ![UI Screenshot](UI.png)
 
-![UI Screenshot 2 ](UI2.png)
+![UI Screenshot 2](UI2.png)
+
+![UI Screenshot 3](UI3.png)
 
 ## ✨ Features
 
@@ -69,20 +71,32 @@ bash scripts/setup-mineru.sh
 
 ### Running Locally
 
-**Option 1: Development Mode with Auto-reload**
+**Terminal 1: Start the FastAPI Backend**
 ```bash
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-**Option 2: Using Python directly**
+**Terminal 2: Start the React Frontend (Development)**
 ```bash
-uv run python main.py
+cd frontend
+npm run dev
 ```
 
-**Open your browser**:
+**Access the Application**:
+- Frontend: http://localhost:5173 (with hot-reload)
+- Backend API: http://localhost:8000
+
+**Note**: The frontend development server proxies API calls to the backend at port 8000 (configured in `frontend/vite.config.js`)
+
+### Production Build
+
+To build the React app for production:
+```bash
+cd frontend
+npm run build
 ```
-http://localhost:8000
-```
+
+This creates an optimized build in `frontend/dist/` which gets copied to `/static` by the Docker build process.
 
 ### Running with Docker
 
@@ -100,8 +114,9 @@ The application will be available at `http://localhost:8000`
 
 ## 📖 Usage
 
-### Web Interface
+### Web Interface (React Frontend)
 
+**Single Conversion**:
 1. **Upload PDF**: Drag & drop or click to select a PDF file
 2. **Select Library**: Choose your preferred conversion library from the dropdown
 3. **Choose Format**: Select output format (Markdown, JSON, or Plain Text)
@@ -111,7 +126,20 @@ The application will be available at `http://localhost:8000`
    - View converted content on the right
    - Switch between "Source" and "Preview" tabs
 6. **Download**: Click "Download" to save the results
-7. **Benchmark**: Check the time taken to compare library performance
+7. **Performance**: Real-time timer shows conversion speed
+
+**Compare Multiple Models** (New Feature):
+1. **Upload PDF**: Select a PDF file
+2. **Click "Compare Models"**: Opens library selection modal
+3. **Select Libraries**: Choose 1-3 converters to compare
+4. **Watch Progress**: Real-time progress bar shows which models are running
+5. **View Results Grid**: See all conversions in a table with:
+   - Time taken for each
+   - Output file size
+   - Success/Failed/Timeout status
+6. **Expand Details**: Click a row to see full content
+7. **Download**: Download individual or all results
+8. **History**: Recent comparisons shown in left sidebar
 
 ### API Usage
 
@@ -171,25 +199,33 @@ Response:
 
 ```
 pdfstract/
-├── main.py                          # FastAPI application
+├── main.py                          # FastAPI application with endpoints
 ├── pyproject.toml                   # Python dependencies (uv)
 ├── uv.lock                          # Locked dependencies
 ├── Dockerfile                       # Docker configuration
 ├── docker-compose.yml               # Docker compose setup
 ├── README.md                        # This file
 │
-├── frontend/                        # React application
+├── frontend/                        # React application (Vite + Tailwind)
 │   ├── src/
-│   │   ├── App.jsx                 # Main React component
+│   │   ├── App.jsx                 # Main React component & routes
 │   │   ├── components/
-│   │   │   └── ui/                 # UI components (button, card, etc.)
-│   │   └── index.css               # Global styles
-│   ├── vite.config.js              # Vite configuration
+│   │   │   ├── CompareModal.jsx           # Library selection modal
+│   │   │   ├── RecentComparisons.jsx      # History sidebar
+│   │   │   ├── ComparisonResults.jsx      # Results display grid
+│   │   │   └── ui/                       # UI components (button, card, etc.)
+│   │   ├── index.css               # Global styles
+│   │   └── main.jsx                # React entry point
+│   ├── dist/                       # Built frontend (production)
+│   ├── vite.config.js              # Vite configuration & proxy setup
 │   ├── tailwind.config.js          # Tailwind CSS config
 │   ├── package.json                # Node dependencies
 │   └── index.html                  # HTML entry point
 │
 ├── services/                        # Backend services
+│   ├── db_service.py               # SQLite database operations
+│   ├── queue_manager.py            # Parallel execution (max 3)
+│   ├── results_manager.py          # File storage for results
 │   ├── ocrfactory.py               # Converter factory & registry
 │   ├── base.py                     # Base converter class
 │   ├── logger.py                   # Logging configuration
@@ -202,12 +238,14 @@ pdfstract/
 │       └── ... (more converters)
 │
 ├── scripts/
-│   └── setup-mineru.sh             # MinerU setup script
+│   └── setup-mineru.sh             # MinerU separate venv setup
 │
-├── templates/                       # Legacy templates
-│   └── index.html
+├── data/
+│   └── tasks.db                    # SQLite database (auto-created)
 │
-├── uploads/                         # Temporary file storage
+├── results/                        # Conversion results storage
+│   └── task_*/                     # Per-task directories
+│
 └── .vscode/
     └── launch.json                 # VS Code debugger config
 ```
@@ -220,6 +258,29 @@ Currently, no environment variables are required. The application is configured 
 - `main.py`: Core FastAPI setup
 - `pyproject.toml`: Python dependencies
 - `docker-compose.yml`: Docker configuration
+
+### Frontend Configuration
+
+The React frontend is configured via:
+- `frontend/vite.config.js`: Vite build config with API proxy
+- `frontend/tailwind.config.js`: Tailwind CSS theming
+- `frontend/package.json`: Node dependencies
+
+### API Proxy Setup
+
+The frontend development server proxies API calls to the backend:
+```javascript
+// frontend/vite.config.js
+server: {
+  proxy: {
+    '/libraries': { target: 'http://localhost:8000' },
+    '/convert': { target: 'http://localhost:8000' },
+    '/compare': { target: 'http://localhost:8000' },
+    '/history': { target: 'http://localhost:8000' },
+    '/health': { target: 'http://localhost:8000' },
+  }
+}
+```
 
 ### Customization
 
@@ -310,25 +371,37 @@ Use the built-in timer feature to benchmark:
 
 ## 📝 Development
 
-### Frontend Development
+### Frontend Development (Hot Reload)
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Frontend will hot-reload at `http://localhost:5173`
+Frontend will be available at `http://localhost:5173` with hot-reload enabled.
 
-### Debug Backend
+### Backend Development (With Debugger)
 
-Use VS Code's Run & Debug feature (F5) configured in `.vscode/launch.json`
+Use VS Code's Run & Debug feature:
+1. Press `F5` or go to Run → Start Debugging
+2. Breakpoints and debugging work via `.vscode/launch.json`
+3. Backend reloads on file changes via `--reload` flag
 
-### Add Frontend Dependencies
+### Adding Frontend Dependencies
 
 ```bash
 cd frontend
 npm install <package-name>
 ```
+
+### Building Frontend for Production
+
+```bash
+cd frontend
+npm run build
+```
+
+Output: `frontend/dist/` → Gets copied to `/app/static` in Docker
 
 ## 🤝 Contributing
 

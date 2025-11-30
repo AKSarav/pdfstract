@@ -26,6 +26,18 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/compare': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/history': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/stats': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
       '/health': {
         target: 'http://localhost:8000',
         changeOrigin: true,

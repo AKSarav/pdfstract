@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
-import { FileText, Upload, Loader2, Download, CheckCircle2, XCircle, FileDown, Github, Clock } from 'lucide-react'
+import { FileText, Upload, Loader2, Download, CheckCircle2, XCircle, FileDown, Github, Clock, Repeat2 } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
 import { Select } from './components/ui/select'
 import { Badge } from './components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Alert, AlertDescription } from './components/ui/alert'
+import { CompareModal } from './components/CompareModal'
+import { RecentComparisons } from './components/RecentComparisons'
+import { ComparisonResults } from './components/ComparisonResults'
 
 function App() {
   const [libraries, setLibraries] = useState([])
@@ -20,11 +23,21 @@ function App() {
   const [toastMessage, setToastMessage] = useState(null)
   const [timeTaken, setTimeTaken] = useState(null)
   const [startTime, setStartTime] = useState(null)
+  
+  // Comparison states
+  const [showCompareModal, setShowCompareModal] = useState(false)
+  const [recentTasks, setRecentTasks] = useState([])
+  const [currentComparisonTask, setCurrentComparisonTask] = useState(null)
+  const [comparisonComparisons, setComparisonComparisons] = useState([])
+  const [isComparingLoading, setIsComparingLoading] = useState(false)
+  
   const toastTimerRef = useRef(null)
   const timerIntervalRef = useRef(null)
+  const comparisonProgressInterval = useRef(null)
 
   useEffect(() => {
     loadLibraries()
+    loadHistory()
   }, [])
 
   const loadLibraries = async () => {
@@ -202,6 +215,153 @@ function App() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  const loadHistory = async () => {
+    try {
+      const response = await fetch('/history?limit=10')
+      const data = await response.json()
+      setRecentTasks(data.tasks || [])
+    } catch (err) {
+      console.error('Failed to load history:', err)
+    }
+  }
+
+  const handleCompareRun = async (selectedLibraries) => {
+    if (!selectedFile) return
+
+    setIsComparingLoading(true)
+    setError(null)
+
+    const formData = new FormData()
+    formData.append('file', selectedFile)
+    formData.append('libraries', JSON.stringify(selectedLibraries))
+    formData.append('output_format', outputFormat)
+
+    try {
+      const response = await fetch('/compare', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.task_id) {
+        setCurrentComparisonTask(data)
+        setComparisonComparisons([])
+        comparisonProgressInterval.current = setInterval(() => {
+          pollComparisonProgress(data.task_id)
+        }, 500)
+      } else {
+        setError(data.detail || 'Comparison failed')
+      }
+    } catch (err) {
+      setError('Failed to start comparison: ' + err.message)
+    } finally {
+      setIsComparingLoading(false)
+      setShowCompareModal(false)
+    }
+  }
+
+  const pollComparisonProgress = async (taskId) => {
+    try {
+      const response = await fetch(`/compare/${taskId}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setCurrentComparisonTask(data)
+        setComparisonComparisons(data.comparisons || [])
+
+        // Stop polling if completed
+        if (data.status === 'completed') {
+          clearInterval(comparisonProgressInterval.current)
+          loadHistory() // Refresh history
+        }
+      }
+    } catch (err) {
+      console.error('Failed to poll comparison progress:', err)
+    }
+  }
+
+  const viewComparisonDetails = async (taskId) => {
+    try {
+      const response = await fetch(`/compare/${taskId}/results`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setCurrentComparisonTask(data.task)
+        
+        // Fetch content for each comparison
+        const comparisonsWithContent = await Promise.all(
+          data.comparisons.map(async (comp) => {
+            if (comp.status === 'success') {
+              try {
+                const contentResp = await fetch(`/compare/${taskId}/content/${comp.library_name}`)
+                const contentData = await contentResp.json()
+                return { ...comp, content: contentData.content }
+              } catch {
+                return comp
+              }
+            }
+            return comp
+          })
+        )
+        
+        setComparisonComparisons(comparisonsWithContent)
+      }
+    } catch (err) {
+      console.error('Failed to load comparison details:', err)
+      setError('Failed to load comparison details')
+    }
+  }
+
+  const deleteComparison = async (taskId) => {
+    try {
+      const response = await fetch(`/compare/${taskId}`, { method: 'DELETE' })
+      if (response.ok) {
+        loadHistory()
+        setCurrentComparisonTask(null)
+      }
+    } catch (err) {
+      console.error('Failed to delete comparison:', err)
+    }
+  }
+
+  const handleDownloadComparison = async (taskId, library) => {
+    try {
+      if (library) {
+        // Download single library result
+        const response = await fetch(`/compare/${taskId}/content/${library}`)
+        const data = await response.json()
+        
+        const content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content, null, 2)
+        const blob = new Blob([content], { type: outputFormat === 'json' ? 'application/json' : 'text/markdown' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${library}_result.${outputFormat === 'json' ? 'json' : 'md'}`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      } else {
+        // Download all results as zip
+        const response = await fetch(`/compare/${taskId}/download`)
+        if (!response.ok) throw new Error('Download failed')
+        
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `comparison_${taskId}.zip`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+    } catch (err) {
+      console.error('Failed to download:', err)
+    }
+  }
+
   const renderMarkdownPreview = (markdown) => {
     // Simple markdown to HTML converter
     let html = markdown
@@ -271,7 +431,7 @@ function App() {
                 </Button>
               )}
               <a
-                href="https://github.com"
+                href="https://github.com/AKSarav/pdfstract"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -405,6 +565,27 @@ function App() {
                     </>
                   )}
                 </Button>
+
+                {/* Compare Button */}
+                <Button
+                  onClick={() => setShowCompareModal(true)}
+                  variant="outline"
+                  disabled={!selectedFile || isComparingLoading}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isComparingLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Comparing...
+                    </>
+                  ) : (
+                    <>
+                      <Repeat2 className="w-4 h-4 mr-2" />
+                      Compare Models
+                    </>
+                  )}
+                </Button>
               </div>
 
               {/* Library Status */}
@@ -444,6 +625,13 @@ function App() {
                   ))}
                 </div>
               </div>
+
+              {/* Recent Comparisons History */}
+              <RecentComparisons 
+                tasks={recentTasks}
+                onViewDetails={viewComparisonDetails}
+                onDelete={deleteComparison}
+              />
 
               {/* Error Alert */}
               {error && (
@@ -612,7 +800,7 @@ function App() {
                   </div>
                   <div>
                     <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-                      Ready to convert
+                      PDFStract - Get your PDFs ready for AI
                     </h3>
                     <p className="text-sm text-slate-500 mt-1">
                       Upload a PDF file to get started
@@ -624,6 +812,31 @@ function App() {
           </main>
         </div>
       </div>
+
+      {/* Compare Modal */}
+      <CompareModal
+        isOpen={showCompareModal}
+        onClose={() => setShowCompareModal(false)}
+        libraries={libraries}
+        onRun={handleCompareRun}
+        isLoading={isComparingLoading}
+      />
+
+      {/* Comparison Results Modal */}
+      {currentComparisonTask && (
+        <ComparisonResults
+          task={currentComparisonTask}
+          comparisons={comparisonComparisons}
+          onClose={() => {
+            setCurrentComparisonTask(null)
+            setComparisonComparisons([])
+            if (comparisonProgressInterval.current) {
+              clearInterval(comparisonProgressInterval.current)
+            }
+          }}
+          onDownload={handleDownloadComparison}
+        />
+      )}
     </div>
   )
 }
