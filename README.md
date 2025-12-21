@@ -1,4 +1,4 @@
-# PDFStract - PDF Extraction & Conversion
+# PDFStract - Extract Data from PDF and Benchmark - CLI - WEBUI - API
 
 A modern web application for converting PDFs to multiple formats using various state-of-the-art extraction libraries. Built with **FastAPI** backend and **React** frontend with a beautiful, responsive UI.
 
