@@ -286,11 +286,7 @@ Contributions are welcome! Please:
 
 ## 📞 Support
 
-If you encounter issues or have questions:
-
-1. Check the [Troubleshooting](#-troubleshooting) section
-2. Review converter-specific documentation
-3. Open an issue on GitHub
+If you encounter issues or have questions - please create an issue
 
 ## 🌟 Please leave a star if you find this project useful
 
