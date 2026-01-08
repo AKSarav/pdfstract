@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { FileText, Upload, Loader2, Download, CheckCircle2, XCircle, FileDown, Github, Clock, Repeat2 } from 'lucide-react'
+import { FileText, Upload, Loader2, Download, CheckCircle2, XCircle, FileDown, Github, Clock, Repeat2, Trash2 } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
 import { Select } from './components/ui/select'
@@ -23,17 +23,18 @@ function App() {
   const [toastMessage, setToastMessage] = useState(null)
   const [timeTaken, setTimeTaken] = useState(null)
   const [startTime, setStartTime] = useState(null)
-  
+
   // Comparison states
   const [showCompareModal, setShowCompareModal] = useState(false)
   const [recentTasks, setRecentTasks] = useState([])
   const [currentComparisonTask, setCurrentComparisonTask] = useState(null)
   const [comparisonComparisons, setComparisonComparisons] = useState([])
   const [isComparingLoading, setIsComparingLoading] = useState(false)
-  
+
   const toastTimerRef = useRef(null)
   const timerIntervalRef = useRef(null)
   const comparisonProgressInterval = useRef(null)
+  const [togglingLibrary, setTogglingLibrary] = useState(null)
 
   useEffect(() => {
     loadLibraries()
@@ -56,6 +57,34 @@ function App() {
     } catch (err) {
       setError('Failed to load libraries')
       console.error(err)
+    }
+  }
+
+  const toggleLibrary = async (libraryName, isEnabled) => {
+    setTogglingLibrary(libraryName)
+    try {
+      const formData = new FormData()
+      formData.append('library_name', libraryName)
+      formData.append('is_enabled', isEnabled)
+
+      const response = await fetch('/libraries/status', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (response.ok) {
+        // Refresh libraries list
+        await loadLibraries()
+        setToastMessage(`Library ${libraryName} ${isEnabled ? 'enabled' : 'disabled'}`)
+        setTimeout(() => setToastMessage(null), 3000)
+      } else {
+        const data = await response.json()
+        setError(data.detail || 'Failed to update library status')
+      }
+    } catch (err) {
+      setError('Failed to update library status: ' + err.message)
+    } finally {
+      setTogglingLibrary(null)
     }
   }
 
@@ -134,11 +163,11 @@ function App() {
     setError(null)
     setResult(null)
     setTimeTaken(null)
-    
+
     // Start timer
     const start = Date.now()
     setStartTime(start)
-    
+
     // Update timer every 100ms
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current)
@@ -278,7 +307,7 @@ function App() {
 
       if (response.ok) {
         setCurrentComparisonTask(data.task)
-        
+
         // Fetch content for each comparison
         const comparisonsWithContent = await Promise.all(
           data.comparisons.map(async (comp) => {
@@ -294,7 +323,7 @@ function App() {
             return comp
           })
         )
-        
+
         setComparisonComparisons(comparisonsWithContent)
       }
     } catch (err) {
@@ -321,7 +350,7 @@ function App() {
         // Download single library result
         const response = await fetch(`/compare/${taskId}/content/${library}`)
         const data = await response.json()
-        
+
         const content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content, null, 2)
         const blob = new Blob([content], { type: outputFormat === 'json' ? 'application/json' : 'text/markdown' })
         const url = URL.createObjectURL(blob)
@@ -336,7 +365,7 @@ function App() {
         // Download all results as zip
         const response = await fetch(`/compare/${taskId}/download`)
         if (!response.ok) throw new Error('Download failed')
-        
+
         const blob = await response.blob()
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -447,13 +476,12 @@ function App() {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg transition-all ${
-                    isDragging
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                      : selectedFile
+                  className={`border-2 border-dashed rounded-lg transition-all ${isDragging
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                    : selectedFile
                       ? 'border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/20'
                       : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
-                  }`}
+                    }`}
                 >
                   <input
                     type="file"
@@ -498,7 +526,7 @@ function App() {
                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide">
                   Configuration
                 </h2>
-                
+
                 {/* Library Selection */}
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -587,11 +615,10 @@ function App() {
                   {libraries.map((lib) => (
                     <div
                       key={lib.name}
-                      className={`flex items-center justify-between p-2 rounded-md text-xs ${
-                        lib.available
-                          ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                      }`}
+                      className={`group flex items-center justify-between p-2 rounded-md text-xs transition-colors ${lib.available
+                        ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{lib.name}</span>
@@ -601,18 +628,47 @@ function App() {
                           </Badge>
                         )}
                       </div>
-                      {lib.available ? (
-                        <CheckCircle2 className="w-4 h-4" />
-                      ) : (
-                        <XCircle className="w-4 h-4" />
-                      )}
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-6 w-6 rounded-full hover:bg-black/5 dark:hover:bg-white/10 ${togglingLibrary === lib.name ? 'opacity-100' : ''
+                          }`}
+                        onClick={() => toggleLibrary(lib.name, !lib.available)}
+                        disabled={togglingLibrary === lib.name}
+                        title={lib.available ? "Click to disable" : "Click to enable"}
+                      >
+                        {togglingLibrary === lib.name ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                        ) : (
+                          <>
+                            {/* Status Icons - Hidden on Hover */}
+                            <div className="group-hover:hidden">
+                              {lib.available ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-slate-400" />
+                              )}
+                            </div>
+
+                            {/* Action Icons - Shown on Hover */}
+                            <div className="hidden group-hover:block">
+                              {lib.available ? (
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              ) : (
+                                <Download className="w-4 h-4 text-green-600" />
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </Button>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Recent Comparisons History */}
-              <RecentComparisons 
+              <RecentComparisons
                 tasks={recentTasks}
                 onViewDetails={viewComparisonDetails}
                 onDelete={deleteComparison}
@@ -755,12 +811,12 @@ function App() {
                         </span>
                         <span className="text-sm text-slate-600 dark:text-slate-400">seconds</span>
                       </div>
-                      
+
                       {/* Progress bar */}
                       <div className="space-y-1 mt-6">
                         <div className="text-xs text-slate-500 dark:text-slate-500">Processing...</div>
                         <div className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 rounded-full animate-pulse"
                             style={{ width: '100%' }}
                           ></div>

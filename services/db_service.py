@@ -49,10 +49,36 @@ class DatabaseService:
                 CONSTRAINT status_check CHECK (status IN ('pending', 'success', 'failed', 'timeout'))
             )
         ''')
+
+        # User-opted libraries table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_libraries (
+                library_name TEXT PRIMARY KEY,
+                is_enabled BOOLEAN DEFAULT 0
+            )
+        ''')
         
         # Create indexes for faster queries
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_tasks_created ON tasks(created_at DESC)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_comparisons_task ON comparisons(task_id)')
+
+        # Seed initial libraries if empty
+        cursor.execute('SELECT COUNT(*) FROM user_libraries')
+        if cursor.fetchone()[0] == 0:
+            initial_libraries = [
+                ('pymupdf4llm', 0),
+                ('markitdown', 0),
+                ('marker', 0),
+                ('docling', 0),
+                ('paddleocr', 0),
+                ('deepseekocr', 0),
+                ('pytesseract', 0),
+                ('unstructured', 0),
+            ]
+            cursor.executemany(
+                'INSERT INTO user_libraries (library_name, is_enabled) VALUES (?, ?)',
+                initial_libraries
+            )
         
         conn.commit()
         conn.close()
@@ -201,6 +227,7 @@ class DatabaseService:
         conn.close()
         return stats
     
+
     def delete_task(self, task_id):
         """Delete task and its comparisons"""
         conn = sqlite3.connect(self.db_path, timeout=30.0)
@@ -213,4 +240,30 @@ class DatabaseService:
         
         conn.commit()
         conn.close()
+
+    def get_enabled_libraries(self):
+        """Get list of enabled library names"""
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT library_name FROM user_libraries WHERE is_enabled = 1')
+        libraries = [row[0] for row in cursor.fetchall()]
+        
+        conn.close()
+        return libraries
+
+    def set_library_status(self, library_name, is_enabled):
+        """Enable or disable a library"""
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO user_libraries (library_name, is_enabled) 
+            VALUES (?, ?)
+            ON CONFLICT(library_name) DO UPDATE SET is_enabled = ?
+        ''', (library_name, 1 if is_enabled else 0, 1 if is_enabled else 0))
+        
+        conn.commit()
+        conn.close()
+
 
