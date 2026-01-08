@@ -38,11 +38,10 @@ if static_dir.exists():
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Initialize factory (singleton pattern)
-factory = OCRFactory()
-
 # Initialize comparison services
 db_service = DatabaseService()
+# Initialize factory (singleton pattern) with DB service
+factory = OCRFactory(db_service)
 queue_manager = QueueManager(db_service)
 results_manager = ResultsManager()
 
@@ -67,6 +66,30 @@ async def health_check():
 async def get_available_libraries():
     """Get list of available conversion libraries"""
     return {"libraries": factory.list_all_converters()}
+
+@app.post("/libraries/status")
+async def set_library_status(
+    library_name: str = Form(...),
+    is_enabled: bool = Form(...)
+):
+    """Enable or disable a library"""
+    try:
+        # Update DB
+        db_service.set_library_status(library_name, is_enabled)
+        
+        # Refresh factory
+        factory.refresh_converters()
+        
+        return {
+            "status": "success", 
+            "library": library_name, 
+            "enabled": is_enabled,
+            "message": f"Library {library_name} {'enabled' if is_enabled else 'disabled'}"
+        }
+    except Exception as e:
+        logger.error(f"Error setting library status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/convert")
 async def convert_pdf(

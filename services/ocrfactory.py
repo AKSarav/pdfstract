@@ -16,13 +16,37 @@ class OCRFactory:
     Implements singleton pattern for converter instances.
     """
     
-    def __init__(self):
+    def __init__(self, db_service=None):
         self._converters: Dict[str, PDFConverter] = {}
+        # If no DB service provided, create one
+        if db_service is None:
+            from services.db_service import DatabaseService
+            self.db_service = DatabaseService()
+        else:
+            self.db_service = db_service
+            
+        self._register_default_converters()
+    
+    def refresh_converters(self):
+        """Reload converters from database settings"""
+        self._converters = {}
         self._register_default_converters()
     
     def _register_default_converters(self):
-        """Register all available converter implementations"""
-        converters = [
+        """Register all available converter implementations based on DB settings"""
+        # Get enabled libraries from DB
+        try:
+            enabled_libraries = set(self.db_service.get_enabled_libraries())
+        except Exception as e:
+            logger.error(f"Failed to load enabled libraries from DB: {e}")
+            
+        logger.info(f"Loading enabled libraries: {enabled_libraries}")
+
+        if len(enabled_libraries) == 0:
+            logger.warning("No enabled libraries found in DB. Registering all converters.")
+            return
+            
+        all_converters = [
             PyMuPDF4LLMConverter(),
             MarkItDownConverter(),
             MarkerConverter(),
@@ -33,7 +57,11 @@ class OCRFactory:
             UnstructuredConverter(),
         ]
         
-        for converter in converters:
+        for converter in all_converters:
+            # Skip if not enabled in DB
+            if converter.name not in enabled_libraries:
+                continue
+                
             if converter.available:
                 self._converters[converter.name] = converter
                 logger.info(f"Registered converter: {converter.name}")
@@ -52,6 +80,11 @@ class OCRFactory:
     
     def list_all_converters(self) -> List[Dict[str, bool]]:
         """List all converters with their availability status"""
+
+        try:
+            enabled_libraries = set(self.db_service.get_enabled_libraries())
+        except Exception as e:
+            logger.error(f"Failed to load enabled libraries from DB: {e}")
         all_converters = [
             "pymupdf4llm",
             "markitdown",
@@ -70,7 +103,8 @@ class OCRFactory:
             result.append({
                 "name": name,
                 "available": available,
-                "error": None if available else getattr(converter, "error_message", "Unavailable")
+                "error": None if available else getattr(converter, "error_message", "Unavailable"),
+                "enabled": name in enabled_libraries
             })
         return result
     
