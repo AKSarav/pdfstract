@@ -4,7 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const baseUrl = "http://localhost:9000";
+const baseUrl = "http://localhost:8000";
 console.log("Using backend URL:", baseUrl);
 export default defineConfig({
   plugins: [react()],
