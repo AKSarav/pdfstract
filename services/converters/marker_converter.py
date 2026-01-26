@@ -1,9 +1,9 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import asyncio
 import shutil
 import re
 from pathlib import Path
-from services.base import PDFConverter
+from services.base import PDFConverter, DownloadStatus
 from services.logger import logger
 
 try:
@@ -26,6 +26,9 @@ class MarkerConverter(PDFConverter):
     def __init__(self):
         self._converter = None
         self._initialized = False
+        self._download_status = DownloadStatus.NOT_STARTED
+        self._download_error: Optional[str] = None
+        self._is_downloading = False
     
     def _clear_datalab_cache(self):
         """Clear the entire datalab models cache to avoid 'already exists' errors"""
@@ -130,6 +133,50 @@ class MarkerConverter(PDFConverter):
     @property
     def available(self) -> bool:
         return MARKER_AVAILABLE
+    
+    @property
+    def requires_download(self) -> bool:
+        return True
+    
+    @property
+    def download_status(self) -> DownloadStatus:
+        if not MARKER_AVAILABLE:
+            return DownloadStatus.NOT_STARTED
+        if self._initialized:
+            return DownloadStatus.READY
+        if self._is_downloading:
+            return DownloadStatus.DOWNLOADING
+        if self._download_error:
+            return DownloadStatus.FAILED
+        return DownloadStatus.NOT_STARTED
+    
+    @property
+    def download_error(self) -> Optional[str]:
+        return self._download_error
+    
+    async def prepare(self) -> bool:
+        """Download and prepare marker models"""
+        if not MARKER_AVAILABLE:
+            self._download_error = "marker library is not installed"
+            self._download_status = DownloadStatus.FAILED
+            return False
+        
+        if self._initialized:
+            return True
+        
+        self._is_downloading = True
+        self._download_error = None
+        
+        try:
+            await self._ensure_initialized()
+            self._is_downloading = False
+            return True
+        except Exception as e:
+            self._is_downloading = False
+            self._download_error = str(e)
+            self._download_status = DownloadStatus.FAILED
+            logger.error(f"Marker: Preparation failed: {e}")
+            return False
     
     def _convert_sync(self, file_path: str) -> str:
         """Synchronous helper for convert_to_md - wraps all blocking operations"""

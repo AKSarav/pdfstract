@@ -1,8 +1,9 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import re
+import asyncio
 import tempfile
 from pathlib import Path
-from services.base import PDFConverter
+from services.base import PDFConverter, DownloadStatus
 from services.logger import logger
 
 try:
@@ -29,6 +30,8 @@ class DeepSeekOCRTransformersConverter(PDFConverter):
         self._init_error = None
         self._model_loaded = False
         self._max_new_tokens = 2048
+        self._is_downloading = False
+        self._download_error: Optional[str] = None
         
         if not DEEPSEEKOCR_TRANSFORMERS_AVAILABLE:
             self._init_error = "Required dependencies not installed: transformers, torch, pdf2image, pillow"
@@ -89,7 +92,56 @@ class DeepSeekOCRTransformersConverter(PDFConverter):
             return "Required dependencies not installed: transformers, torch, pdf2image, pillow. Also requires poppler (brew install poppler)."
         elif self._init_error:
             return f"Initialization failed: {self._init_error}"
+        elif self._download_error:
+            return self._download_error
         return "Available only on CUDA-enabled GPUs (downloads ~6.7GB on first use)."
+    
+    @property
+    def requires_download(self) -> bool:
+        return True
+    
+    @property
+    def download_status(self) -> DownloadStatus:
+        if not DEEPSEEKOCR_TRANSFORMERS_AVAILABLE:
+            return DownloadStatus.NOT_STARTED
+        if self._model_loaded:
+            return DownloadStatus.READY
+        if self._is_downloading:
+            return DownloadStatus.DOWNLOADING
+        if self._download_error:
+            return DownloadStatus.FAILED
+        return DownloadStatus.NOT_STARTED
+    
+    @property
+    def download_error(self) -> Optional[str]:
+        return self._download_error
+    
+    async def prepare(self) -> bool:
+        """Download and prepare DeepSeek-OCR models"""
+        if not DEEPSEEKOCR_TRANSFORMERS_AVAILABLE:
+            self._download_error = "Required dependencies not installed"
+            return False
+        
+        if not torch.cuda.is_available():
+            self._download_error = "DeepSeek-OCR requires a CUDA-enabled GPU"
+            return False
+        
+        if self._model_loaded:
+            return True
+        
+        self._is_downloading = True
+        self._download_error = None
+        
+        try:
+            logger.info("DeepSeek-OCR: Starting model download (~6.7GB)...")
+            await asyncio.to_thread(self._ensure_model_loaded)
+            self._is_downloading = False
+            return True
+        except Exception as e:
+            self._is_downloading = False
+            self._download_error = str(e)
+            logger.error(f"DeepSeek-OCR: Preparation failed: {e}")
+            return False
 
     def _patch_flash_attention(self):
         """Provide a stub for LlamaFlashAttention2 if transformers tries to import it."""

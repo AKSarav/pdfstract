@@ -1,8 +1,9 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import re
 import asyncio
 from pathlib import Path
-from services.base import PDFConverter
+from services.base import PDFConverter, DownloadStatus
+from services.logger import logger
 
 PADDLEOCR_AVAILABLE = False
 PPStructureV3 = None
@@ -21,16 +22,30 @@ class PaddleOCRConverter(PDFConverter):
     def __init__(self):
         self._pipeline = None
         self._error_message = PADDLEOCR_ERROR
-        if PADDLEOCR_AVAILABLE:
-            try:
-                self._pipeline = PPStructureV3(
-                    use_doc_orientation_classify=False,
-                    use_doc_unwarping=False
-                )
-            except Exception as e:
-                # If initialization fails, mark as unavailable
-                self._pipeline = None
-                self._error_message = f"Initialization failed: {str(e)}"
+        self._initialized = False
+        self._is_downloading = False
+        self._download_error: Optional[str] = None
+    
+    def _ensure_initialized(self):
+        """Lazy initialization - only create pipeline when needed"""
+        if self._initialized:
+            return
+        
+        if not PADDLEOCR_AVAILABLE:
+            raise RuntimeError("paddleocr is not available")
+        
+        try:
+            logger.info("PaddleOCR: Initializing PPStructureV3 (this may download models)...")
+            self._pipeline = PPStructureV3(
+                use_doc_orientation_classify=False,
+                use_doc_unwarping=False
+            )
+            self._initialized = True
+            logger.info("PaddleOCR: Initialization complete")
+        except Exception as e:
+            self._pipeline = None
+            self._error_message = f"Initialization failed: {str(e)}"
+            raise RuntimeError(self._error_message)
     
     @property
     def name(self) -> str:
@@ -38,15 +53,58 @@ class PaddleOCRConverter(PDFConverter):
     
     @property
     def available(self) -> bool:
-        return PADDLEOCR_AVAILABLE and self._pipeline is not None
+        return PADDLEOCR_AVAILABLE
     
     @property
     def error_message(self) -> str:
         if not PADDLEOCR_AVAILABLE:
             return self._error_message or "paddleocr not installed"
-        if self._pipeline is None:
-            return self._error_message or "Failed to initialize PPStructureV3"
+        if self._download_error:
+            return self._download_error
         return None
+    
+    @property
+    def requires_download(self) -> bool:
+        return True
+    
+    @property
+    def download_status(self) -> DownloadStatus:
+        if not PADDLEOCR_AVAILABLE:
+            return DownloadStatus.NOT_STARTED
+        if self._initialized and self._pipeline is not None:
+            return DownloadStatus.READY
+        if self._is_downloading:
+            return DownloadStatus.DOWNLOADING
+        if self._download_error:
+            return DownloadStatus.FAILED
+        return DownloadStatus.NOT_STARTED
+    
+    @property
+    def download_error(self) -> Optional[str]:
+        return self._download_error
+    
+    async def prepare(self) -> bool:
+        """Download and prepare PaddleOCR models"""
+        if not PADDLEOCR_AVAILABLE:
+            self._download_error = "paddleocr library is not installed"
+            return False
+        
+        if self._initialized:
+            return True
+        
+        self._is_downloading = True
+        self._download_error = None
+        
+        try:
+            logger.info("PaddleOCR: Starting model download/initialization...")
+            await asyncio.to_thread(self._ensure_initialized)
+            self._is_downloading = False
+            return True
+        except Exception as e:
+            self._is_downloading = False
+            self._download_error = str(e)
+            logger.error(f"PaddleOCR: Preparation failed: {e}")
+            return False
     
     def _convert_to_md_sync(self, file_path: str) -> str:
         """Synchronous helper for convert_to_md"""
@@ -85,6 +143,9 @@ class PaddleOCRConverter(PDFConverter):
     async def convert_to_md(self, file_path: str) -> str:
         if not self.available:
             raise RuntimeError("paddleocr is not available")
+        
+        # Ensure initialized (lazy loading)
+        await asyncio.to_thread(self._ensure_initialized)
         
         try:
             # Run blocking operations in thread executor to avoid blocking the event loop
@@ -134,6 +195,9 @@ class PaddleOCRConverter(PDFConverter):
     async def convert_to_json(self, file_path: str) -> Dict[str, Any]:
         if not self.available:
             raise RuntimeError("paddleocr is not available")
+        
+        # Ensure initialized (lazy loading)
+        await asyncio.to_thread(self._ensure_initialized)
         
         try:
             # Run blocking operations in thread executor to avoid blocking the event loop

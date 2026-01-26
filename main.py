@@ -17,6 +17,7 @@ from services.logger import logger
 from services.db_service import DatabaseService
 from services.queue_manager import QueueManager
 from services.results_manager import ResultsManager
+from services.chunker_factory import get_chunker_factory
 
 app = FastAPI(title="PDFStract - Unified PDF extraction wrapper", description="Convert PDF files to Markdown using various libraries")
 
@@ -88,8 +89,41 @@ async def health_check():
 
 @app.get("/libraries")
 async def get_available_libraries():
-    """Get list of available conversion libraries"""
+    """Get list of available conversion libraries with download status"""
     return {"libraries": get_factory().list_all_converters()}
+
+
+@app.get("/libraries/{library_name}/status")
+async def get_library_status(library_name: str):
+    """Get detailed status for a specific library"""
+    status = get_factory().get_converter_status(library_name)
+    if not status:
+        raise HTTPException(status_code=404, detail=f"Library '{library_name}' not found")
+    return status
+
+
+@app.post("/libraries/{library_name}/download")
+async def download_library_models(library_name: str):
+    """
+    Trigger on-demand model download for a specific library.
+    
+    This endpoint downloads required models for converters like marker, docling, etc.
+    The download happens asynchronously and may take several minutes.
+    """
+    result = await get_factory().prepare_converter(library_name)
+    
+    if result["success"]:
+        return JSONResponse({
+            "success": True,
+            "library": library_name,
+            "message": result.get("message", "Models downloaded successfully")
+        })
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error", "Download failed")
+        )
+
 
 @app.post("/convert")
 async def convert_pdf(
@@ -375,6 +409,201 @@ async def get_library_stats():
     return {"stats": stats}
 
 
+# ============================================================================
+# CHUNKING ENDPOINTS
+# ============================================================================
+
+@app.get("/chunkers")
+async def get_available_chunkers():
+    """Get list of available chunkers with their parameter schemas"""
+    try:
+        factory = get_chunker_factory()
+        return {"chunkers": factory.list_all_chunkers()}
+    except Exception as e:
+        logger.error(f"Error listing chunkers: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/chunk")
+async def chunk_text(
+    text: str = Form(...),
+    chunker: str = Form(...),
+    params: str = Form("{}")
+):
+    """
+    Chunk text using the specified chunker.
+    
+    Args:
+        text: The text to chunk
+        chunker: Name of the chunker to use (token, sentence, recursive, table, etc.)
+        params: JSON string of chunker-specific parameters
+        
+    Returns:
+        ChunkingResult with chunks and metadata
+    """
+    # Parse parameters
+    try:
+        chunker_params = json.loads(params) if params else {}
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid params JSON format")
+    
+    try:
+        factory = get_chunker_factory()
+        
+        logger.info(f"Chunking text with chunker: {chunker}, params: {chunker_params}")
+        
+        # Chunk with timeout protection
+        result = await asyncio.wait_for(
+            factory.chunk_with_result(chunker, text, **chunker_params),
+            timeout=60.0  # 1 minute timeout for chunking
+        )
+        
+        logger.info(f"Chunking successful: {result.total_chunks} chunks created")
+        
+        return JSONResponse({
+            "success": True,
+            "chunker": chunker,
+            "result": result.to_dict()
+        })
+        
+    except asyncio.TimeoutError:
+        error_msg = "Chunking timed out after 1 minute"
+        logger.error(error_msg)
+        raise HTTPException(status_code=504, detail=error_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        logger.warning(f"Chunking rejected: {error_msg}")
+        raise HTTPException(status_code=400, detail=error_msg)
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"Chunking failed: {error_msg}")
+        logger.exception("Full error traceback:")
+        raise HTTPException(status_code=500, detail=error_msg)
+
+
+@app.post("/convert-and-chunk")
+async def convert_and_chunk(
+    file: UploadFile = File(...),
+    library: str = Form(...),
+    chunker: str = Form(...),
+    output_format: str = Form("markdown"),
+    chunker_params: str = Form("{}")
+):
+    """
+    Convert PDF and chunk the result in one operation.
+    
+    Args:
+        file: PDF file to convert
+        library: Conversion library to use
+        chunker: Chunker to use for splitting the converted text
+        output_format: Output format (markdown, text)
+        chunker_params: JSON string of chunker-specific parameters
+        
+    Returns:
+        Combined conversion and chunking result
+    """
+    # Validate file type
+    if not file.filename or not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    # Validate output format - chunking only works with text-based formats
+    if output_format.lower() == "json":
+        raise HTTPException(
+            status_code=400, 
+            detail="Chunking requires text-based output. Use 'markdown' or 'text' format."
+        )
+    
+    try:
+        format_enum = OutputFormat(output_format.lower())
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid output format. Supported: markdown, text"
+        )
+    
+    # Parse chunker parameters
+    try:
+        chunk_params = json.loads(chunker_params) if chunker_params else {}
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid chunker_params JSON format")
+    
+    # Save uploaded file temporarily
+    temp_file_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf', mode='wb') as temp_file:
+            content = await file.read()
+            temp_file.write(content)
+            temp_file.flush()
+            temp_file_path = temp_file.name
+        
+        logger.info(f"Starting convert-and-chunk: library={library}, chunker={chunker}")
+        
+        # Step 1: Convert PDF
+        try:
+            converted_text = await asyncio.wait_for(
+                get_factory().convert_async(
+                    converter_name=library,
+                    file_path=temp_file_path,
+                    output_format=format_enum
+                ),
+                timeout=300.0  # 5 minute timeout for conversion
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Conversion timed out after 5 minutes")
+        
+        logger.info(f"Conversion successful, text length: {len(converted_text)}")
+        
+        # Step 2: Chunk the converted text
+        factory = get_chunker_factory()
+        try:
+            chunking_result = await asyncio.wait_for(
+                factory.chunk_with_result(chunker, converted_text, **chunk_params),
+                timeout=60.0  # 1 minute timeout for chunking
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Chunking timed out after 1 minute")
+        
+        logger.info(f"Chunking successful: {chunking_result.total_chunks} chunks")
+        
+        return JSONResponse({
+            "success": True,
+            "filename": file.filename,
+            "library_used": library,
+            "chunker_used": chunker,
+            "format": output_format,
+            "conversion": {
+                "text_length": len(converted_text),
+                "content": converted_text
+            },
+            "chunking": chunking_result.to_dict()
+        })
+        
+    except HTTPException:
+        raise
+    except ValueError as e:
+        error_msg = str(e)
+        logger.warning(f"Convert-and-chunk rejected: {error_msg}")
+        raise HTTPException(status_code=400, detail=error_msg)
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"Convert-and-chunk failed: {error_msg}")
+        logger.exception("Full error traceback:")
+        raise HTTPException(status_code=500, detail=error_msg)
+    
+    finally:
+        # Clean up temporary file
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to cleanup temp file: {cleanup_error}")
+
+
+# ============================================================================
+# END CHUNKING ENDPOINTS
+# ============================================================================
+
+
 @app.delete("/compare/{task_id}")
 async def delete_comparison(task_id: str):
     """Delete comparison task and results"""
@@ -466,7 +695,7 @@ if static_dir.exists():
     async def serve_react_app(full_path: str):
         """Catch-all route to serve React app for client-side routing"""
         # Skip API routes - these should be 404 handled by FastAPI
-        api_prefixes = ("libraries", "convert", "compare", "history", "stats", "health", "static")
+        api_prefixes = ("libraries", "convert", "compare", "history", "stats", "health", "static", "chunkers", "chunk")
         if any(full_path.startswith(prefix) for prefix in api_prefixes):
             raise HTTPException(status_code=404, detail="Not found")
         

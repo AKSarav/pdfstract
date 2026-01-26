@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { FileText, Upload, Loader2, Download, CheckCircle2, XCircle, FileDown, Github, Clock, Repeat2 } from 'lucide-react'
+import { FileText, Upload, Loader2, Download, CheckCircle2, XCircle, FileDown, Github, Clock, Repeat2, Scissors, DownloadCloud } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
 import { Select } from './components/ui/select'
@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from './components/ui/alert'
 import { CompareModal } from './components/CompareModal'
 import { RecentComparisons } from './components/RecentComparisons'
 import { ComparisonResults } from './components/ComparisonResults'
+import { ChunkerSelect } from './components/ChunkerSelect'
+import { ChunkResults } from './components/ChunkResults'
 
 function App() {
   const [libraries, setLibraries] = useState([])
@@ -31,6 +33,16 @@ function App() {
   const [comparisonComparisons, setComparisonComparisons] = useState([])
   const [isComparingLoading, setIsComparingLoading] = useState(false)
   
+  // Chunking states
+  const [chunkers, setChunkers] = useState([])
+  const [selectedChunker, setSelectedChunker] = useState('')
+  const [chunkerParams, setChunkerParams] = useState({})
+  const [chunkingResult, setChunkingResult] = useState(null)
+  const [showChunkResults, setShowChunkResults] = useState(false)
+  
+  // Download states
+  const [downloadingLibraries, setDownloadingLibraries] = useState(new Set())
+  
   const toastTimerRef = useRef(null)
   const timerIntervalRef = useRef(null)
   const comparisonProgressInterval = useRef(null)
@@ -38,7 +50,97 @@ function App() {
   useEffect(() => {
     loadLibraries()
     loadHistory()
+    loadChunkers()
   }, [])
+  
+  const loadChunkers = async () => {
+    try {
+      const response = await fetch('/chunkers')
+      const data = await response.json()
+      setChunkers(data.chunkers || [])
+    } catch (err) {
+      console.error('Failed to load chunkers:', err)
+    }
+  }
+  
+  const handleChunkConvertedText = async () => {
+    if (!result || !result.content) {
+      setError('No converted text available to chunk')
+      return
+    }
+    
+    // Use the first available chunker if none selected
+    const chunkerToUse = selectedChunker || (chunkers.find(c => c.available)?.name)
+    if (!chunkerToUse) {
+      setError('No chunker available')
+      return
+    }
+    
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('/chunk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          text: result.content,
+          chunker: chunkerToUse,
+          params: JSON.stringify(chunkerParams)
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok && data.success) {
+        setChunkingResult({
+          chunking: data.result,
+          conversion: { content: result.content }
+        })
+        setShowChunkResults(true)
+      } else {
+        setError(data.detail || 'Chunking failed')
+      }
+    } catch (err) {
+      setError('Failed to chunk text: ' + err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  const handleDownloadLibrary = async (libraryName) => {
+    // Add to downloading set
+    setDownloadingLibraries(prev => new Set([...prev, libraryName]))
+    setError(null)
+    
+    try {
+      const response = await fetch(`/libraries/${libraryName}/download`, {
+        method: 'POST'
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok && data.success) {
+        // Refresh libraries list to get updated status
+        await loadLibraries()
+        setToastMessage(`${libraryName} models downloaded successfully`)
+        setTimeout(() => setToastMessage(null), 3000)
+      } else {
+        setError(data.detail || `Failed to download ${libraryName} models`)
+      }
+    } catch (err) {
+      setError(`Failed to download ${libraryName}: ${err.message}`)
+    } finally {
+      // Remove from downloading set
+      setDownloadingLibraries(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(libraryName)
+        return newSet
+      })
+    }
+  }
 
   const loadLibraries = async () => {
     try {
@@ -133,6 +235,7 @@ function App() {
     setIsLoading(true)
     setError(null)
     setResult(null)
+    setChunkingResult(null)
     setTimeTaken(null)
     
     // Start timer
@@ -153,29 +256,69 @@ function App() {
     formData.append('library', selectedLibrary)
     formData.append('output_format', outputFormat)
 
-    try {
-      const response = await fetch('/convert', {
-        method: 'POST',
-        body: formData,
-      })
+    // If chunking is selected, use the convert-and-chunk endpoint
+    if (selectedChunker && outputFormat !== 'json') {
+      formData.append('chunker', selectedChunker)
+      formData.append('chunker_params', JSON.stringify(chunkerParams))
+      
+      try {
+        const response = await fetch('/convert-and-chunk', {
+          method: 'POST',
+          body: formData,
+        })
 
-      const data = await response.json()
+        const data = await response.json()
 
-      if (response.ok && data.success) {
-        setResult(data)
-        // Create object URL for PDF preview
-        const url = URL.createObjectURL(selectedFile)
-        setPdfUrl(url)
-      } else {
-        setError(data.detail || 'Conversion failed')
+        if (response.ok && data.success) {
+          // Set result for display
+          setResult({
+            success: true,
+            library_used: data.library_used,
+            filename: data.filename,
+            format: data.format,
+            content: data.conversion.content
+          })
+          setChunkingResult(data)
+          // Create object URL for PDF preview
+          const url = URL.createObjectURL(selectedFile)
+          setPdfUrl(url)
+        } else {
+          setError(data.detail || 'Conversion and chunking failed')
+        }
+      } catch (err) {
+        setError('Failed to convert and chunk PDF: ' + err.message)
+      } finally {
+        setIsLoading(false)
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current)
+        }
       }
-    } catch (err) {
-      setError('Failed to convert PDF: ' + err.message)
-    } finally {
-      setIsLoading(false)
-      // Stop timer
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
+    } else {
+      // Standard conversion without chunking
+      try {
+        const response = await fetch('/convert', {
+          method: 'POST',
+          body: formData,
+        })
+
+        const data = await response.json()
+
+        if (response.ok && data.success) {
+          setResult(data)
+          // Create object URL for PDF preview
+          const url = URL.createObjectURL(selectedFile)
+          setPdfUrl(url)
+        } else {
+          setError(data.detail || 'Conversion failed')
+        }
+      } catch (err) {
+        setError('Failed to convert PDF: ' + err.message)
+      } finally {
+        setIsLoading(false)
+        // Stop timer
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current)
+        }
       }
     }
   }
@@ -393,7 +536,7 @@ function App() {
                   PDFStract
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  PDF extraction & conversion
+                  Get your PDFs ready for AI
                 </p>
               </div>
             </div>
@@ -451,7 +594,7 @@ function App() {
                     isDragging
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
                       : selectedFile
-                      ? 'border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/20'
+                      ? 'border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/20'
                       : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600'
                   }`}
                 >
@@ -526,7 +669,14 @@ function App() {
                   </label>
                   <Select
                     value={outputFormat}
-                    onChange={(e) => setOutputFormat(e.target.value)}
+                    onChange={(e) => {
+                      setOutputFormat(e.target.value)
+                      // Clear chunker if switching to JSON (chunking not supported)
+                      if (e.target.value === 'json') {
+                        setSelectedChunker('')
+                        setChunkerParams({})
+                      }
+                    }}
                     disabled={isLoading}
                     className="w-full"
                   >
@@ -535,6 +685,34 @@ function App() {
                     <option value="text">Plain Text</option>
                   </Select>
                 </div>
+
+                {/* Chunking Configuration (only for text-based formats) */}
+                {outputFormat !== 'json' && (
+                  <div className="space-y-2">
+                    {chunkers.length > 0 ? (
+                      <ChunkerSelect
+                        chunkers={chunkers}
+                        selectedChunker={selectedChunker}
+                        onChunkerChange={(chunker) => {
+                          setSelectedChunker(chunker)
+                          setChunkerParams({}) // Reset params when changing chunker
+                        }}
+                        params={chunkerParams}
+                        onParamsChange={setChunkerParams}
+                        disabled={isLoading}
+                      />
+                    ) : (
+                      <>
+                        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Text Chunking (for RAG)
+                        </label>
+                        <Select disabled className="w-full">
+                          <option value="">Install chonkie to enable</option>
+                        </Select>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Convert Button */}
                 <Button
@@ -584,30 +762,63 @@ function App() {
                   Available Libraries
                 </h2>
                 <div className="space-y-2">
-                  {libraries.map((lib) => (
-                    <div
-                      key={lib.name}
-                      className={`flex items-center justify-between p-2 rounded-md text-xs ${
-                        lib.available
-                          ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{lib.name}</span>
-                        {lib.name === 'deepseekocr' && (
-                          <Badge variant="outline" className="text-[10px]">
-                            GPU only
-                          </Badge>
-                        )}
+                  {libraries.map((lib) => {
+                    const isDownloading = downloadingLibraries.has(lib.name)
+                    const needsDownload = lib.requires_download && lib.download_status === 'not_started' && lib.available
+                    const isReady = lib.download_status === 'ready' || lib.download_status === 'not_required'
+                    
+                    return (
+                      <div
+                        key={lib.name}
+                        className={`flex items-center justify-between p-2 rounded-md text-xs ${
+                          lib.available && isReady
+                            ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400'
+                            : lib.available && needsDownload
+                            ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{lib.name}</span>
+                          {lib.name === 'deepseekocr' && (
+                            <Badge variant="outline" className="text-[10px]">
+                              GPU only
+                            </Badge>
+                          )}
+                          {needsDownload && !isDownloading && (
+                            <Badge variant="outline" className="text-[10px] text-amber-600">
+                              needs models
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {/* Download button for libraries that need models */}
+                          {lib.available && needsDownload && (
+                            <button
+                              onClick={() => handleDownloadLibrary(lib.name)}
+                              disabled={isDownloading}
+                              className="p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+                              title={`Download ${lib.name} models`}
+                            >
+                              {isDownloading ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                              ) : (
+                                <DownloadCloud className="w-4 h-4 text-amber-600 hover:text-amber-700" />
+                              )}
+                            </button>
+                          )}
+                          {/* Status icon */}
+                          {lib.available && isReady ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : lib.available && isDownloading ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                          ) : !lib.available ? (
+                            <XCircle className="w-4 h-4 text-slate-400" />
+                          ) : null}
+                        </div>
                       </div>
-                      {lib.available ? (
-                        <CheckCircle2 className="w-4 h-4" />
-                      ) : (
-                        <XCircle className="w-4 h-4" />
-                      )}
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
@@ -643,9 +854,32 @@ function App() {
                         </h2>
                         <p className="text-xs text-slate-500">
                           {result.library_used} • {result.format}
+                          {chunkingResult && ` • ${chunkingResult.chunking?.total_chunks || 0} chunks`}
                         </p>
                       </div>
                     </div>
+                    {chunkingResult ? (
+                      <Button
+                        onClick={() => setShowChunkResults(true)}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
+                      >
+                        <Scissors className="w-4 h-4" />
+                        View Chunks ({chunkingResult.chunking?.total_chunks || 0})
+                      </Button>
+                    ) : result.format !== 'json' && chunkers.length > 0 && (
+                      <Button
+                        onClick={() => handleChunkConvertedText()}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        disabled={isLoading}
+                      >
+                        <Scissors className="w-4 h-4" />
+                        Chunk Text
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -779,18 +1013,50 @@ function App() {
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-slate-400" />
-                  </div>
+                <div className="text-center space-y-6 max-w-md">
+                  {/* Title */}
                   <div>
-                    <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-                      PDFStract - Get your PDFs ready for AI
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+                      PDFStract
                     </h3>
-                    <p className="text-sm text-slate-500 mt-1">
-                      Upload a PDF file to get started
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      The First tool in your AI RAG pipeline
                     </p>
                   </div>
+
+                  {/* Steps */}
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 text-left space-y-3">
+                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
+                      How it works
+                    </p>
+                    {[
+                      { num: 1, text: 'Upload your PDF file' },
+                      { num: 2, text: 'Choose a conversion library' },
+                      { num: 3, text: 'Select the output format' },
+                      { num: 4, text: 'Pick a chunking method (optional)' },
+                      { num: 5, text: 'Click Convert or Compare' },
+                    ].map((step) => (
+                      <div key={step.num} className="flex items-center gap-3">
+                        <span className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">
+                          {step.num}
+                        </span>
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
+                          {step.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* GitHub Link */}
+                  <a
+                    href="https://github.com/pdfstract/pdfstract"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                  >
+                    <Github className="w-4 h-4" />
+                    <span>View on GitHub</span>
+                  </a>
                 </div>
               </div>
             )}
@@ -820,6 +1086,15 @@ function App() {
             }
           }}
           onDownload={handleDownloadComparison}
+        />
+      )}
+
+      {/* Chunk Results Modal */}
+      {showChunkResults && chunkingResult && (
+        <ChunkResults
+          result={chunkingResult}
+          pdfUrl={pdfUrl}
+          onClose={() => setShowChunkResults(false)}
         />
       )}
     </div>

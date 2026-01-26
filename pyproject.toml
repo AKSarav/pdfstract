@@ -38,6 +38,8 @@ dependencies = [
     "pytesseract>=0.3.10",
     # Unstructured.io for document extraction
     "unstructured[pdf]>=0.15.0",
+    # Text chunking for RAG/embedding pipelines (all chunkers enabled)
+    "chonkie[all]>=1.0.0",  # Includes semantic, code, neural, genie, and all other chunkers
 ]
 
 [project.scripts]
@@ -47,5 +49,5 @@ pdfstract = "cli:pdfstract"
 
 [tool.setuptools]
 py-modules = ["cli", "batch_scheduler"]
-packages = ["services", "services.converters"]
+packages = ["services", "services.converters", "services.chunkers"]
 include-package-data = true

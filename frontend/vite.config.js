@@ -42,6 +42,18 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/chunkers': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/chunk': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/convert-and-chunk': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
 })
