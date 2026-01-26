@@ -270,31 +270,6 @@ curl -X POST http://localhost:8000/libraries/marker/download
 ```
 
 
-## 📊 Performance Comparison ( Based on our evaluation )
-
-Use the built-in timer feature to benchmark:
-
-| Library | Speed | Quality | Best For |
-|---------|-------|---------|----------|
-| pymupdf4llm | ⚡⚡⚡ | ⭐⭐ | Simple text extraction |
-| unstructured | ⚡⚡ | ⭐⭐⭐ | Complex layouts |
-| markitdown | ⚡⚡ | ⭐⭐⭐ | Balanced performance |
-| marker | ⚡ | ⭐⭐⭐⭐ | Highest quality (ML-based) |
-| docling | ⚡ | ⭐⭐⭐⭐ | Document intelligence |
-| paddleocr | ⚡ | ⭐⭐⭐ | Scanned PDFs |
-| deepseekocr | ⚡ | ⭐⭐⭐ | Scanned PDFs |
-| pytesseract | ⚡ | ⭐⭐⭐ | Scanned PDFs |
-
-**NOTE**: The performance comparison is based on the performance of the libraries when used with the default settings of the application. The performance may vary depending on the complexity of the PDF and the settings of the library.
-
-## 🔐 Security
-
-- File uploads are stored temporarily and deleted after conversion
-- No data is persisted or logged
-- Use HTTPS in production
-- API endpoints are not authenticated (add authentication for production)
-
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please:
