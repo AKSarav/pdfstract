@@ -11,6 +11,10 @@ Available as CLI, Web UI and API — PDFstract is the first tool in your AI RAG 
   <img src="https://img.shields.io/github/license/AKSarav/pdfstract" />
 </p>
 
+![PDFStract UI](uploads/Sample1.png)
+![PDFStract UI](uploads/Sample2.png)
+
+
 
 ### 🚀 What is PDFStract?
 
