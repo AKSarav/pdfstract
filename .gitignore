@@ -10,3 +10,4 @@ wheels/
 .venv/
 pdfstract-311/
 tests/results/*
+.env

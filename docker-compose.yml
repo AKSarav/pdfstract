@@ -14,6 +14,8 @@ services:
       - model-cache:/root/.cache
     environment:
       - UVICORN_RELOAD=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     # Resource limits for Apple Silicon
     deploy:
       resources:
