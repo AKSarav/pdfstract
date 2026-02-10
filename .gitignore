@@ -10,3 +10,5 @@ wheels/
 .venv/
 pdfstract-311/
 tests/results/*
+hf-cache/*
+ultralytics-cache/*
