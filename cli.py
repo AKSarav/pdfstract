@@ -26,6 +26,12 @@ from services.base import OutputFormat
 from services.logger import logger
 from services.chunker_factory import get_chunker_factory
 
+# Import version for --version option (reads from api module which reads from pyproject.toml)
+try:
+    from api import __version__
+except ImportError:
+    __version__ = "1.1.0"  # Fallback version
+
 # Rich console for beautiful output
 console = Console()
 
@@ -99,11 +105,19 @@ class PDFStractCLI:
 cli_app = PDFStractCLI(lazy=True)
 
 
-@click.group()
+def print_version(ctx, param, value):
+    """Callback to print version and exit"""
+    if value:
+        console.print(f"pdfstract, version {__version__}")
+        ctx.exit()
+
+
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.option('--version', is_flag=True, callback=print_version, expose_value=False, is_eager=True, help="Show the version and exit.")
 def pdfstract():
     """PDFStract - Unified PDF Extraction CLI Tool
     
-    Convert PDFs using 10+ extraction libraries with single/batch/compare modes.
+    The Extraction and Chunking Layer in Your RAG Pipeline
     """
     pass
 
@@ -1037,6 +1051,11 @@ def convert_chunk(
         sys.exit(1)
 
 
+def main():
+    """Main entry point for the CLI"""
+    pdfstract(standalone_mode=False)
+
+
 if __name__ == '__main__':
-    pdfstract()
+    main()
 

@@ -1,22 +1,41 @@
 FROM python:3.13-slim-bullseye
 ENV PYTHONUNBUFFERED=1
+# Keep the uv-managed virtualenv OUTSIDE /app so bind-mounting /app doesn't wipe it.
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+ENV HF_HOME=/opt/hf-cache
+ENV HF_HUB_CACHE=/opt/hf-cache
+ENV TRANSFORMERS_CACHE=/opt/hf-cache
 WORKDIR /app
 
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       libgl1 \
+      libglib2.0-0 \
+      libsm6 \
+      libxext6 \
+      libxrender1 \
       poppler-utils \
       tesseract-ocr \
-      build-essential && \
+      build-essential \
+      git && \
     rm -rf /var/lib/apt/lists/*
 
 COPY services /app/services
 COPY *.py /app/
+COPY CLI_README.md .
 COPY pyproject.toml .
-
+COPY pdfstract ./pdfstract
+COPY pdfstract.egg-info ./pdfstract.egg-info  
 RUN pip install --upgrade pip uv
 
 RUN uv sync
 
+RUN git clone https://github.com/opendatalab/MinerU.git
+WORKDIR /app/MinerU
+RUN uv pip install -e .[all]
+WORKDIR /app
+
 EXPOSE 8000
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "600", "--timeout-graceful-shutdown", "30"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "600", "--timeout-graceful-shutdown", "30"]

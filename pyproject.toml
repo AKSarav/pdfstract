@@ -1,17 +1,17 @@
 [build-system]
-requires = ["setuptools>=70", "wheel"]
+requires = ["setuptools>=70", "wheel", "twine"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdfstract"
-version = "1.0.4"
-description = "PDFStract - Unified PDF Extraction & Conversion CLI + Web UI with 10+ extraction libraries"
+version = "1.1.0"
+description = "PDFStract - The Extraction and Chunking Layer in Your RAG Pipeline - Available as CLI - WEBUI - API"
 readme = "CLI_README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11, <=3.13.3"
 dependencies = [
     "aiofiles>=24.1.0",
     "click>=8.1.0",
-    "docling>=2.41.0",
+    "docling>=2.12.0",
     "fastapi>=0.116.1",
     "jinja2>=3.1.6",
     "marker-pdf>=1.8.1",
@@ -40,14 +40,14 @@ dependencies = [
     "unstructured[pdf]>=0.15.0",
     # Text chunking for RAG/embedding pipelines (all chunkers enabled)
     "chonkie[all]>=1.0.0",  # Includes semantic, code, neural, genie, and all other chunkers
+    # TOML parsing for version management
+    "tomli>=2.0.0; python_version < '3.11'",
 ]
 
 [project.scripts]
-pdfstract = "cli:pdfstract"
-
-[project.optional-dependencies]
+pdfstract = "cli:main"
 
 [tool.setuptools]
 py-modules = ["cli", "batch_scheduler"]
-packages = ["services", "services.converters", "services.chunkers"]
+packages = ["pdfstract", "services", "services.converters", "services.chunkers"]
 include-package-data = true
