@@ -68,10 +68,10 @@ class PDFStractCLI:
     
     def print_banner(self):
         """Print CLI banner"""
-        banner = """
+        banner = f"""
 [bold cyan]╔════════════════════════════════════════╗[/bold cyan]
-[bold cyan]║         PDFStract CLI v1.0             ║[/bold cyan]
-[bold cyan]║      PDF Extraction & Conversion       ║[/bold cyan]
+[bold cyan]║         PDFStract CLI v{__version__:<16}║[/bold cyan]
+[bold cyan]║    PDF Extraction & Chunking Layer     ║[/bold cyan]
 [bold cyan]╚════════════════════════════════════════╝[/bold cyan]
         """
         self.console.print(banner)
