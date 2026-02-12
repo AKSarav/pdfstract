@@ -377,7 +377,7 @@ jobs:
 
 Continue exploring PDFStract:
 
-- **[Python API](../api/overview)** - Use in your applications
+- **[Python Module](../api/overview)** - Use in your applications
 - **[Web UI](../web-ui/overview)** - Visual interface
 - **[Installation](../installation)** - Advanced installation options
 

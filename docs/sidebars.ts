@@ -26,7 +26,7 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Python API',
+      label: 'Python Module',
       items: [
         'api/overview',
       ],

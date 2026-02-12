@@ -285,7 +285,7 @@ For CUDA support, ensure you have the appropriate PyTorch version installed for 
 Once installed, try these guides:
 
 - **[Quick Start](quick-start)** - Convert your first PDF
-- **[Python API](../api/overview)** - Use in your applications
+- **[Python Module](../api/overview)** - Use in your applications
 - **[CLI Guide](../cli/overview)** - Command-line usage
 - **[Web UI](../web-ui/overview)** - Visual interface
 

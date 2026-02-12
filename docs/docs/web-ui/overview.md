@@ -346,7 +346,7 @@ python run.py
 
 Continue exploring PDFStract:
 
-- **[Python API](../api/overview)** - Use in your applications
+- **[Python Module](../api/overview)** - Use in your applications
 - **[CLI Guide](../cli/overview)** - Command-line interface
 - **[Installation](../installation)** - Advanced installation options
 

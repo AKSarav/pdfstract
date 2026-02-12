@@ -92,7 +92,7 @@ const config: Config = {
               to: '/quick-start',
             },
             {
-              label: 'API Reference',
+              label: 'Module Reference',
               to: '/api/overview',
             },
             {

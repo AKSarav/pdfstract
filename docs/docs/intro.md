@@ -72,7 +72,7 @@ Ready to dive in? Here are some great starting points:
 
 - **[Quick Start Guide](quick-start)** - Get up and running in 5 minutes
 - **[Installation](installation)** - Install PDFStract in your environment  
-- **[Python API](api/overview)** - Integrate into your applications
+- **[Python Module](api/overview)** - Integrate into your applications
 - **[CLI Guide](cli/overview)** - Use from the command line
 - **[Web UI](web-ui/overview)** - Try the visual interface
 

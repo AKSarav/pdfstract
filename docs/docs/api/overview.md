@@ -2,9 +2,9 @@
 sidebar_position: 1
 ---
 
-# Python API Overview
+# Python Module Overview
 
-The PDFStract Python API provides a powerful and flexible interface for converting PDFs and chunking text. This guide covers the main classes and methods.
+The PDFStract Python Module provides a powerful and flexible interface for converting PDFs and chunking text. This guide covers the main classes and methods.
 
 ## Core Class: PDFStract
 

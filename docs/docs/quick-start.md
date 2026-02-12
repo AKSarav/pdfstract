@@ -131,7 +131,7 @@ pdfstract batch ./pdfs/ --output ./results/
 Now that you have the basics down, explore more advanced features:
 
 - **[Installation Guide](installation)** - Advanced installation options
-- **[Python API](api/overview)** - Complete API reference
+- **[Python Module](api/overview)** - Complete module reference
 - **[CLI Guide](cli/overview)** - Full command-line interface
 - **[Web UI](web-ui/overview)** - Using the visual interface
 
