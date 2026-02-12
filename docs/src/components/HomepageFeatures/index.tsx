@@ -5,14 +5,14 @@ import styles from './styles.module.css';
 
 type FeatureItem = {
   title: string;
-  Svg: React.ComponentType<React.ComponentProps<'svg'>>;
+  image: string;
   description: ReactNode;
 };
 
 const FeatureList: FeatureItem[] = [
   {
     title: 'Extract',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    image: require('@site/static/img/extract.png').default,
     description: (
       <>
         Choose from Marker, Docling, PyMuPDF4LLM, Unstructured, PaddleOCR,
@@ -22,7 +22,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'Chunk',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    image: require('@site/static/img/chunk.png').default,
     description: (
       <>
         Split text intelligently with 10+ chunking methods. From simple token-based
@@ -32,7 +32,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'Get your PDF ready for RAG',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    image: require('@site/static/img/ai-intel.png').default,
     description: (
       <>
         Get structured, chunked content ready for embedding models and vector databases.
@@ -42,11 +42,11 @@ const FeatureList: FeatureItem[] = [
   },
 ];
 
-function Feature({title, Svg, description}: FeatureItem) {
+function Feature({title, image, description}: FeatureItem) {
   return (
     <div className={clsx('col col--4')}>
       <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
+        <img src={image} className={styles.featureSvg} alt={title} />
       </div>
       <div className="text--center padding-horiz--md">
         <Heading as="h3">{title}</Heading>

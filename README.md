@@ -43,7 +43,11 @@ PDFStract is a tool to get your PDFs ready for AI - Extract Data, Chunk, Embed a
 - ⚡ **Batch Processing**: Parallel conversion of 100+ PDFs with detailed reporting
 - 🌙 **Dark Mode Ready**: Works seamlessly in light and dark themes
 
-## 📚 Supported Libraries
+## � Documentation
+
+Visit **[pdfstract.com](https://pdfstract.com)** for full documentation, guides, and examples.
+
+## �📚 Supported Libraries
 
 | Library | Version | Type | Status | Notes |
 |---------|---------|------|--------|-------|

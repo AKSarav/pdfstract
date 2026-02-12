@@ -4,10 +4,26 @@
  */
 
 .heroBanner {
-  padding: 4rem 0;
+  padding: 6rem 2rem;
   text-align: center;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(135deg, #062139 0%, #1a4d7a 100%);
+}
+
+.heroBanner :global(.hero__title) {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.heroBanner :global(.hero__subtitle) {
+  font-size: 1.5rem;
+  margin-bottom: 2.5rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 @media screen and (max-width: 996px) {
@@ -20,4 +36,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 1rem;
+}
+
+.buttons :global(.button) {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.buttons :global(.button--secondary) {
+  background-color: white;
+  color: #062139;
+  border: 2px solid white;
+}
+
+.buttons :global(.button--secondary:hover) {
+  background-color: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }

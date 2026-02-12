@@ -65,7 +65,7 @@ const config: Config = {
       title: 'PDFStract',
       logo: {
         alt: 'PDFStract Logo',
-        src: 'img/logo.svg',
+        src: 'img/logo.png',
       },
       items: [
         {
@@ -82,7 +82,7 @@ const config: Config = {
       ],
     },
     footer: {
-      style: 'dark',
+      style: 'light',
       links: [
         {
           title: 'Documentation',
@@ -92,6 +92,10 @@ const config: Config = {
               to: '/quick-start',
             },
             {
+              label: 'Installation',
+              to: '/installation',
+            },
+            {
               label: 'Module Reference',
               to: '/api/overview',
             },
@@ -99,23 +103,65 @@ const config: Config = {
               label: 'CLI Guide',
               to: '/cli/overview',
             },
+            {
+              label: 'Web UI Guide',
+              to: '/web-ui/overview',
+            },
+          ],
+        },
+        {
+          title: 'Libraries',
+          items: [
+            {
+              label: 'PyPI Package',
+              href: 'https://pypi.org/project/pdfstract',
+            },
+            {
+              label: 'GitHub Repository',
+              href: 'https://github.com/aksarav/pdfstract',
+            },
+            {
+              label: 'Changelog',
+              href: 'https://github.com/aksarav/pdfstract/releases',
+            },
           ],
         },
         {
           title: 'Community',
           items: [
             {
-              label: 'GitHub',
-              href: 'https://github.com/aksarav/pdfstract',
+              label: 'GitHub Issues',
+              href: 'https://github.com/aksarav/pdfstract/issues',
             },
             {
-              label: 'Issues',
-              href: 'https://github.com/aksarav/pdfstract/issues',
+              label: 'Discussions',
+              href: 'https://github.com/aksarav/pdfstract/discussions',
+            },
+            {
+              label: 'Report Bug',
+              href: 'https://github.com/aksarav/pdfstract/issues/new',
+            },
+          ],
+        },
+        {
+          title: 'Resources',
+          items: [
+            {
+              label: 'License (MIT)',
+              href: 'https://github.com/aksarav/pdfstract/blob/main/LICENSE',
+            },
+            {
+              label: 'Contributing',
+              href: 'https://github.com/aksarav/pdfstract/blob/main/CONTRIBUTING.md',
+            },
+            {
+              label: 'Support',
+              href: 'https://github.com/aksarav/pdfstract/discussions',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} PDFStract. Built with Docusaurus.`,
+      copyright: `<strong>© ${new Date().getFullYear()} PDFStract</strong> • Built with ❤️ for AI RAG pipelines • <a href="https://github.com/aksarav/pdfstract" target="_blank">Star us on GitHub ⭐</a>`,
     },
     prism: {
       theme: prismThemes.github,
