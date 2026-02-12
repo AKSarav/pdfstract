@@ -8,6 +8,7 @@ from services.converters.paddleocr_converter import PaddleOCRConverter
 from services.converters.deepseekocr_transformers_converter import DeepSeekOCRTransformersConverter
 from services.converters.pytesseract_converter import PyTesseractConverter
 from services.converters.unstructured_converter import UnstructuredConverter
+from services.converters.mineru_converter import MinerUConverter
 from services.logger import logger
 
 class OCRFactory:
@@ -34,6 +35,7 @@ class OCRFactory:
             DeepSeekOCRTransformersConverter(),
             PyTesseractConverter(),
             UnstructuredConverter(),
+            MinerUConverter(),
         ]
         
         for converter in converters:

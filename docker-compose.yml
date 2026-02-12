@@ -9,11 +9,12 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
-      - /app/.venv
-      - model-cache:/root/.cache
+      - ./hf-cache:/opt/hf-cache:ro
     environment:
       - UVICORN_RELOAD=1
+      - HF_HUB_CACHE=/opt/hf-cache
+      - TRANSFORMERS_CACHE=/opt/hf-cache
+      - HF_HOME=/opt/hf-cache
     # Resource limits for Apple Silicon
     deploy:
       resources:
@@ -40,7 +41,3 @@ services:
 networks:
   pdfstract-network:
     driver: bridge
-
-volumes:
-  model-cache:
-    driver: local

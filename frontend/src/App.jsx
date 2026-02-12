@@ -785,6 +785,16 @@ function App() {
                               GPU only
                             </Badge>
                           )}
+                          {lib.name === 'mineru' && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Docker Only
+                            </Badge>
+                          )}
+                          {lib.name === 'paddleocr' && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Mac M1/M2, GPU only
+                            </Badge>
+                          )}
                           {needsDownload && !isDownloading && (
                             <Badge variant="outline" className="text-[10px] text-amber-600">
                               needs models

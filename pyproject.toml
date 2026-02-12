@@ -1,53 +1,94 @@
 [build-system]
-requires = ["setuptools>=70", "wheel"]
+requires = ["setuptools>=70", "wheel", "twine"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdfstract"
-version = "1.0.4"
-description = "PDFStract - Unified PDF Extraction & Conversion CLI + Web UI with 10+ extraction libraries"
+version = "1.1.0"
+description = "PDFStract - The Extraction and Chunking Layer in Your RAG Pipeline - Available as CLI - WEBUI - API"
 readme = "CLI_README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11, <=3.13.3"
+license = {text = "MIT"}
+authors = [
+    {name = "PDFStract Team"}
+]
+keywords = ["pdf", "extraction", "rag", "chunking", "llm", "ai", "document"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Text Processing :: General",
+]
+
+# BASE - Fast extractors (pymupdf4llm, markitdown), no ML models
 dependencies = [
+    # Core framework
     "aiofiles>=24.1.0",
     "click>=8.1.0",
-    "docling>=2.41.0",
     "fastapi>=0.116.1",
     "jinja2>=3.1.6",
-    "marker-pdf>=1.8.1",
-    "markitdown[pdf]>=0.1.2",
-    "paddleocr[all]>=3.3.2",
-    "paddlepaddle>=3.2.2; platform_machine != 'aarch64'",
-    "pdf2image>=1.17.0",
-    "pillow>=10.4.0",
-    "pymupdf4llm>=0.0.26",
-    "pypdf2>=3.0.1",
-    "python-magic>=0.4.27",
     "python-multipart>=0.0.20",
     "rich>=13.0.0",
     "uvicorn[standard]>=0.35.0",
-    # Logging
     "loguru>=0.7.2",
-    # DeepSeek-OCR dependencies (transformers-based, works on CPU or GPU)
+    "python-magic>=0.4.27",
+    "tomli>=2.0.0; python_version < '3.11'",
+    # ===== BASE LIBRARIES =====
+    # pymupdf4llm, markitdown
+    "pymupdf4llm>=0.0.26",
+    "markitdown[pdf]>=0.1.2",
+    # Internal dependencies (not shown to user)
+    "pillow>=10.4.0",
+    "pypdf2>=3.0.1",
+    "chonkie[all]>=1.0.0",
+]
+
+[project.optional-dependencies]
+# STANDARD - Adds pytesseract, unstructured
+standard = [
+    # ===== STANDARD LIBRARIES =====
+    # pytesseract, unstructured
+    "pytesseract>=0.3.10",
+    "unstructured[pdf]>=0.15.0",
+    # Internal dependencies
+    "pdf2image>=1.17.0",
+]
+
+# ADVANCED - Adds marker, docling, paddleocr, deepseek (ML-powered, best quality)
+advanced = [
+    # ===== ADVANCED LIBRARIES =====
+    # marker, docling, paddleocr, deepseek
+    "marker-pdf>=1.8.1",
+    "docling>=2.12.0",
+    "paddleocr[all]>=3.3.2",
+    "paddlepaddle>=3.2.2; platform_machine != 'aarch64'",
+    # DeepSeek-OCR dependencies
     "transformers>=4.51.1",
     "torch>=2.0.0",
     "addict>=2.4.0",
     "matplotlib>=3.10.7",
     "easydict>=1.13",
-    # For Tesseract OCR (requires system tesseract binary: e.g. brew/apt install tesseract)
-    "pytesseract>=0.3.10",
-    # Unstructured.io for document extraction
-    "unstructured[pdf]>=0.15.0",
-    # Text chunking for RAG/embedding pipelines (all chunkers enabled)
-    "chonkie[all]>=1.0.0",  # Includes semantic, code, neural, genie, and all other chunkers
+]
+
+# ALL - Everything: all libraries + chunking
+all = [
+    "pdfstract[standard]",
+    "pdfstract[advanced]",
 ]
 
 [project.scripts]
-pdfstract = "cli:pdfstract"
+pdfstract = "cli:main"
 
-[project.optional-dependencies]
+[project.urls]
+Homepage = "https://github.com/aksarav/pdfstract"
+Documentation = "https://aksarav.github.io/pdfstract"
+Repository = "https://github.com/aksarav/pdfstract"
+Issues = "https://github.com/aksarav/pdfstract/issues"
 
 [tool.setuptools]
 py-modules = ["cli", "batch_scheduler"]
-packages = ["services", "services.converters", "services.chunkers"]
+packages = ["pdfstract", "services", "services.converters", "services.chunkers"]
 include-package-data = true

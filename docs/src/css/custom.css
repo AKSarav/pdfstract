@@ -1,0 +1,90 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #062139;
+  --ifm-color-primary-dark: #041b29;
+  --ifm-color-primary-darker: #031420;
+  --ifm-color-primary-darkest: #02101a;
+  --ifm-color-primary-light: #1a4d7a;
+  --ifm-color-primary-lighter: #2570a0;
+  --ifm-color-primary-lightest: #3892c6;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* Typography improvements */
+:root {
+  --ifm-font-size-base: 16px;
+  --ifm-heading-font-weight: 700;
+  --ifm-line-height-base: 1.6;
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #3892c6;
+  --ifm-color-primary-dark: #2570a0;
+  --ifm-color-primary-darker: #1a4d7a;
+  --ifm-color-primary-darkest: #062139;
+  --ifm-color-primary-light: #5ba8d6;
+  --ifm-color-primary-lighter: #7ebfe6;
+  --ifm-color-primary-lightest: #a1d4f0;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Feature cards styling */
+.col > div {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.col > div:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+/* Better spacing for content */
+.container {
+  max-width: 1200px;
+}
+
+/* Improve code blocks */
+[class*='codeBlock'] {
+  border-radius: 8px;
+  margin: 1.5rem 0;
+}
+
+/* Footer styling */
+footer[class*='footer'] {
+  background-color: white !important;
+  color: #333;
+  border-top: 1px solid #e0e0e0;
+}
+
+footer[class*='footer'] a {
+  color: #062139;
+}
+
+footer[class*='footer'] a:hover {
+  color: #1a4d7a;
+}
+
+/* Dark mode footer */
+[data-theme='dark'] footer[class*='footer'] {
+  background-color: white !important;
+  color: #333;
+}
+
+[data-theme='dark'] footer[class*='footer'] a {
+  color: #062139;
+}
+
+[data-theme='dark'] footer[class*='footer'] a:hover {
+  color: #1a4d7a;
+}

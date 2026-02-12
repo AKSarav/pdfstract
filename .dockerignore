@@ -19,3 +19,6 @@ env
 UI.png
 README.md 
 .venv/*
+docs/*
+pdfstract/*
+pdfstract.egg-info/*

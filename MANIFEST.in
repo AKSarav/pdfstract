@@ -1,0 +1,7 @@
+include README.md
+include CLI_README.md
+include LICENSE
+include pyproject.toml
+recursive-include services *.py
+recursive-include pdfstract *.py
+include *.py
