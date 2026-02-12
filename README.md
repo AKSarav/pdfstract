@@ -166,10 +166,25 @@ This creates an optimized build in `frontend/dist/` which gets copied to `/stati
 **Docker provides the full PDFStract experience** with all libraries including MinerU (which has platform-specific dependencies).
 
 ```bash
-docker-compose up --build
+# Download models and start services (first time)
+make up
+
+# Or step by step:
+make models   # Download HuggingFace/MinerU models (~10GB)
+make build    # Build Docker images
+make up       # Start services
+
+# Other useful commands:
+make logs     # View container logs
+make down     # Stop services
+make clean    # Remove containers and volumes
+make status   # Show running containers
+make rebuild  # Rebuild and restart
 ```
 
-The application will be available at `http://localhost:8000`
+The application will be available at:
+- **Web UI**: http://localhost:3000
+- **API**: http://localhost:8000
 
 > **Note**: MinerU (the highest-quality converter) is only available in Docker due to platform-specific dependencies. For the best PDF extraction experience, we recommend using Docker.
 

@@ -9,15 +9,12 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./hf-cache:/opt/hf-cache
-      - ./ultralytics-cache:/app/ultralytics
+      - ./hf-cache:/opt/hf-cache:ro
     environment:
       - UVICORN_RELOAD=1
       - HF_HUB_CACHE=/opt/hf-cache
       - TRANSFORMERS_CACHE=/opt/hf-cache
       - HF_HOME=/opt/hf-cache
-      - YOLO_CONFIG_DIR=/app/ultralytics
-      - YOLO_CACHE_DIR=/app/ultralytics
     # Resource limits for Apple Silicon
     deploy:
       resources:

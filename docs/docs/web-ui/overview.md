@@ -33,14 +33,17 @@ pdfstract web --host 0.0.0.0 --port 8080
 
 Open http://localhost:8000 in your browser.
 
-### Using Docker
+### Using Docker (Recommended)
 
 ```bash
-# Using docker-compose (recommended)
-docker-compose up web-ui
+# Using make (downloads models + builds + starts)
+make up
 
-# Or run individual container  
-docker run -p 8000:8000 aksarav/pdfstract:latest web
+# Other useful commands:
+make logs     # View container logs
+make down     # Stop services
+make status   # Show running containers
+make rebuild  # Rebuild and restart
 ```
 
 ## Interface Walkthrough

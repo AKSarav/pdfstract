@@ -132,23 +132,44 @@ pip install pdfstract[all]
 
 ## Docker Installation
 
-### Using Docker Compose (Recommended)
+### Using Make ( With Docker ) (Recommended)
 
-The easiest way to get everything running:
+The easiest way to get everything running with all libraries including MinerU:
+
+> **why do we need make instead of direct docker** ?
+we are downloading the necassary models from hugging face in your host machine as docker containers have limited bandwidth and memory
+If you check the docker-compose.yaml you can find that we are mounting these models as a volume for smoother docker setup.
+
 
 ```bash
 # Clone the repository
 git clone https://github.com/aksarav/pdfstract.git
 cd pdfstract
 
-# Start all services
-docker-compose up -d
+# Download models and start services (first time)
+make up
+
+# Or step by step:
+make models   # Download HuggingFace/MinerU models (~10GB)
+make build    # Build Docker images
+make up       # Start services
 ```
+
+### Available Make Commands
+
+| Command | Description |
+|---------|-------------|
+| `make up` | Build and start all services |
+| `make down` | Stop all services |
+| `make logs` | View container logs |
+| `make status` | Show running containers |
+| `make rebuild` | Rebuild and restart |
+| `make clean` | Remove containers and volumes |
+| `make models` | Download ML models only |
 
 This starts:
 - Web UI at http://localhost:3000
 - API server at http://localhost:8000
-- Background processing queue
 
 ### Using Docker Images
 
