@@ -15,11 +15,11 @@ pip install pdfstract
 # Standard - Adds OCR (pytesseract, unstructured)
 pip install pdfstract[standard]
 
-# Premium - ML-powered (marker, docling, paddleocr, deepseek)
-pip install pdfstract[premium]
+# Advanced - ML-powered (marker, docling, paddleocr, deepseek)
+pip install pdfstract[advanced]
 
-# Full - Everything including chunking
-pip install pdfstract[full]
+# All - Everything including chunking
+pip install pdfstract[all]
 ```
 
 ## Quick Start
@@ -48,8 +48,8 @@ pdfstract batch ./pdfs/ --output ./results/
 | Tier | Libraries Available |
 |------|---------------------|
 | **Base** | pymupdf4llm, markitdown |
-| **Standard** | + pytesseract, unstructured |
-| **Premium** | + marker, docling, paddleocr, deepseek |
+| **Standard** | pytesseract, unstructured |
+| **Advanced** | + marker, docling, paddleocr, deepseek |
 
 ## Main Commands
 
@@ -375,12 +375,10 @@ jobs:
 
 ## Next Steps
 
-Explore more CLI features:
+Continue exploring PDFStract:
 
-- **[Basic Usage](basic-usage)** - Detailed command examples
-- **[Batch Processing](batch-processing)** - Handle multiple files
-- **[Configuration](configuration)** - Config files and settings
-- **[Automation](automation)** - Scripts and CI/CD
-- **[Troubleshooting](troubleshooting)** - Common issues and solutions
+- **[Python API](../api/overview)** - Use in your applications
+- **[Web UI](../web-ui/overview)** - Visual interface
+- **[Installation](../installation)** - Advanced installation options
 
 Need help? Use `pdfstract COMMAND --help` for detailed command information!

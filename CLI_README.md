@@ -23,9 +23,9 @@ PDFStract offers tiered installation based on the libraries you need:
 | Tier | Libraries | Install Command | Best For |
 |------|-----------|-----------------|----------|
 | **Base** | pymupdf4llm, markitdown | `pip install pdfstract` | Fast extraction, simple PDFs |
-| **Standard** | + pytesseract, unstructured | `pip install pdfstract[standard]` | OCR support, structured docs |
-| **Premium** | + marker, docling, paddleocr, deepseek | `pip install pdfstract[premium]` | Best quality, ML-powered |
-| **Full** | All above + chunking | `pip install pdfstract[full]` | Complete RAG pipeline |
+| **Standard** | pytesseract, unstructured | `pip install pdfstract[standard]` | OCR support, structured docs |
+| **Advanced** | marker, docling, paddleocr, deepseek | `pip install pdfstract[advanced]` | Best quality, ML-powered |
+| **All** | All libraries combined | `pip install pdfstract[all]` | Complete RAG pipeline |
 
 ### From PyPI (Recommended)
 
@@ -36,14 +36,11 @@ pip install pdfstract
 # Standard - Adds OCR libraries (pytesseract, unstructured)
 pip install pdfstract[standard]
 
-# Premium - Adds ML-powered libraries (marker, docling, paddleocr, deepseek)
-pip install pdfstract[premium]
+# Advanced - Adds ML-powered libraries (marker, docling, paddleocr, deepseek)
+pip install pdfstract[advanced]
 
-# Full - Everything including chunking support
-pip install pdfstract[full]
-
-# Just add chunking to any tier
-pip install pdfstract[standard,chunking]
+# All - All converters combined (standard + advanced)
+pip install pdfstract[all]
 ```
 
 ### From Source

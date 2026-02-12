@@ -344,11 +344,10 @@ python run.py
 
 ## Next Steps
 
-Learn more about web interface features:
+Continue exploring PDFStract:
 
-- **[Getting Started](getting-started)** - First-time setup
-- **[File Processing](file-processing)** - Upload and convert PDFs
-- **[Results Management](results-management)** - Working with outputs
-- **[API Reference](../api/web-api)** - Backend API documentation
+- **[Python API](../api/overview)** - Use in your applications
+- **[CLI Guide](../cli/overview)** - Command-line interface
+- **[Installation](../installation)** - Advanced installation options
 
 Ready to try the visual interface? Run `pdfstract web` and open http://localhost:8000! 🚀

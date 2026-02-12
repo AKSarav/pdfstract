@@ -57,9 +57,9 @@ standard = [
     "pdf2image>=1.17.0",
 ]
 
-# PREMIUM - Adds marker, docling, paddleocr, deepseek (ML-powered, best quality)
-premium = [
-    # ===== PREMIUM LIBRARIES =====
+# ADVANCED - Adds marker, docling, paddleocr, deepseek (ML-powered, best quality)
+advanced = [
+    # ===== ADVANCED LIBRARIES =====
     # marker, docling, paddleocr, deepseek
     "marker-pdf>=1.8.1",
     "docling>=2.12.0",
@@ -73,10 +73,10 @@ premium = [
     "easydict>=1.13",
 ]
 
-# FULL - Everything: all libraries + chunking
-full = [
+# ALL - Everything: all libraries + chunking
+all = [
     "pdfstract[standard]",
-    "pdfstract[premium]",
+    "pdfstract[advanced]",
 ]
 
 [project.scripts]

@@ -294,13 +294,10 @@ chunks = pdfstract.chunk(text, chunker='semantic')
 
 ## Next Steps
 
-Explore specific components:
+Continue exploring PDFStract:
 
-- **[PDF Conversion](pdf-conversion)** - Detailed converter guide
-- **[Text Chunking](text-chunking)** - Complete chunking reference
-- **[Error Handling](error-handling)** - Robust error management
-- **[Performance](performance)** - Optimization techniques
-- **[Examples](examples)** - Real-world use cases
-- **[Configuration](configuration)** - Advanced configuration
+- **[Quick Start](../quick-start)** - Get started quickly
+- **[CLI Guide](../cli/overview)** - Command-line interface
+- **[Web UI](../web-ui/overview)** - Visual interface
 
-Ready to integrate PDFStract into your application? Check out our [examples](examples) and [best practices](../guides/best-practices)!
+Ready to integrate PDFStract into your application? Explore the API methods above!

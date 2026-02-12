@@ -18,9 +18,9 @@ PDFStract offers tiered installation based on your needs:
 | Tier | Libraries | Install Command |
 |------|-----------|-----------------|
 | **Base** | pymupdf4llm, markitdown | `pip install pdfstract` |
-| **Standard** | + pytesseract, unstructured | `pip install pdfstract[standard]` |
-| **Premium** | + marker, docling, paddleocr, deepseek | `pip install pdfstract[premium]` |
-| **Full** | All above + chunking | `pip install pdfstract[full]` |
+| **Standard** | pytesseract, unstructured | `pip install pdfstract[standard]` |
+| **Advanced** | marker, docling, paddleocr, deepseek | `pip install pdfstract[advanced]` |
+| **All** | All libraries combined | `pip install pdfstract[all]` |
 
 ```bash
 # Quick start with base libraries
@@ -30,10 +30,10 @@ pip install pdfstract
 pip install pdfstract[standard]
 
 # Best quality (larger download)
-pip install pdfstract[premium]
+pip install pdfstract[advanced]
 
-# Everything including chunking
-pip install pdfstract[full]
+# All converters combined
+pip install pdfstract[all]
 ```
 
 For development or latest features:
@@ -85,7 +85,7 @@ print(chunks['chunks'][0]['text'][:200] + "...")
 - **pytesseract** - OCR for scanned PDFs
 - **unstructured** - Smart document parsing
 
-### Premium (pip install pdfstract[premium])
+### Advanced (pip install pdfstract[advanced])
 - All Standard libraries plus:
 - **marker** - Excellent for complex layouts
 - **docling** - IBM's document intelligence
@@ -131,11 +131,9 @@ pdfstract batch ./pdfs/ --output ./results/
 Now that you have the basics down, explore more advanced features:
 
 - **[Installation Guide](installation)** - Advanced installation options
-- **[Python API](../api/overview)** - Complete API reference
-- **[CLI Guide](../cli/overview)** - Full command-line interface
-- **[Web UI](../web-ui/overview)** - Using the visual interface
-- **[Libraries](../libraries/converters)** - All conversion libraries
-- **[Chunkers](../libraries/chunkers)** - All chunking methods
+- **[Python API](api/overview)** - Complete API reference
+- **[CLI Guide](cli/overview)** - Full command-line interface
+- **[Web UI](web-ui/overview)** - Using the visual interface
 
 ## Common Use Cases
 

@@ -13,9 +13,9 @@ PDFStract offers tiered installation based on the libraries you need:
 | Tier | Libraries | Install Command | Best For |
 |------|-----------|-----------------|----------|
 | **Base** | pymupdf4llm, markitdown | `pip install pdfstract` | Fast extraction, simple PDFs |
-| **Standard** | + pytesseract, unstructured | `pip install pdfstract[standard]` | OCR support, structured docs |
-| **Premium** | + marker, docling, paddleocr, deepseek | `pip install pdfstract[premium]` | Best quality, ML-powered |
-| **Full** | All above + chunking | `pip install pdfstract[full]` | Complete RAG pipeline |
+| **Standard** | pytesseract, unstructured | `pip install pdfstract[standard]` | OCR support, structured docs |
+| **Advanced** | marker, docling, paddleocr, deepseek | `pip install pdfstract[advanced]` | Best quality, ML-powered |
+| **All** | All libraries combined | `pip install pdfstract[all]` | Complete RAG pipeline |
 
 ## Basic Installation
 
@@ -28,20 +28,17 @@ pip install pdfstract
 # Standard - Adds OCR libraries (pytesseract, unstructured)
 pip install pdfstract[standard]
 
-# Premium - Adds ML-powered libraries (marker, docling, paddleocr, deepseek)
-pip install pdfstract[premium]
+# Advanced - Adds ML-powered libraries (marker, docling, paddleocr, deepseek)
+pip install pdfstract[advanced]
 
-# Full - Everything including chunking support
-pip install pdfstract[full]
-
-# Just add chunking to any tier
-pip install pdfstract[standard,chunking]
+# All - All converters combined (standard + advanced)
+pip install pdfstract[all]
 ```
 
 ### Using uv (Fast)
 
 ```bash
-uv pip install pdfstract[full]
+uv pip install pdfstract[all]
 ```
 
 ## Development Installation
@@ -94,7 +91,7 @@ All Base libraries plus:
 pip install pdfstract[standard]
 ```
 
-### Premium  
+### Advanced  
 All Standard libraries plus:
 - **marker** - ML-powered, excellent for complex layouts
 - **docling** - IBM's document intelligence platform
@@ -102,33 +99,19 @@ All Standard libraries plus:
 - **deepseek** - GPU-accelerated OCR
 
 ```bash
-pip install pdfstract[premium]
+pip install pdfstract[advanced]
 ```
 
 ### Full
-All Premium libraries plus:
-- **Chunking support** - 10+ chunking methods for RAG pipelines
-
-```bash
-pip install pdfstract[full]
-```
-
-### Chunking Only
-Add chunking to any tier:
-
-```bash
-pip install pdfstract[chunking]
-pip install pdfstract[standard,chunking]
-```
-```
-
-### Complete Installation
-
-To install everything:
+All Standard + Advanced libraries combined:
 
 ```bash
 pip install pdfstract[all]
 ```
+
+:::info Chunking Included
+Chunking support (10+ methods via chonkie) is included in the **base** installation. No extra install needed!
+:::
 
 ## Docker Installation
 
@@ -215,16 +198,11 @@ pdfstract list-chunkers
 
 ## System Requirements
 
-### Minimum Requirements
-- Python 3.8+
-- 2GB RAM
-- 1GB disk space
-
 ### Recommended Requirements
-- Python 3.10+
+- Python 3.11+
 - 8GB RAM (for large documents)
-- 5GB disk space (for all libraries)
-- GPU (optional, for neural chunking)
+- 5~10GB disk space (for all libraries to download)
+- GPU (OPTIONAL for GPU Only models)
 
 ### Platform Support
 
@@ -250,11 +228,11 @@ pip install pdfstract
 
 **Converter not found errors**
 ```bash
-# Install missing converter
-pip install pdfstract[marker]
+# Install advanced tier for ML-powered converters (marker, docling, etc.)
+pip install pdfstract[advanced]
 
-# Or install all converters
-pip install pdfstract[all-converters]
+# Or install everything
+pip install pdfstract[all]
 ```
 
 **Memory errors with large PDFs**
@@ -288,22 +266,25 @@ pip install pdfstract
 
 ### GPU Support
 
-For GPU-accelerated processing:
+GPU acceleration is available with the **advanced** or **all** tiers (includes PyTorch):
 
 ```bash
-# Install with CUDA support
-pip install pdfstract[gpu]
+# Advanced tier includes GPU-capable libraries
+pip install pdfstract[advanced]
 
 # Verify GPU detection
 python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
 ```
+
+:::tip
+For CUDA support, ensure you have the appropriate PyTorch version installed for your CUDA version.
+:::
 
 ## Next Steps
 
 Once installed, try these guides:
 
 - **[Quick Start](quick-start)** - Convert your first PDF
-- **[First Conversion](first-conversion)** - Detailed first example
 - **[Python API](../api/overview)** - Use in your applications
 - **[CLI Guide](../cli/overview)** - Command-line usage
 - **[Web UI](../web-ui/overview)** - Visual interface

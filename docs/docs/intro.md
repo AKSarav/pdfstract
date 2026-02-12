@@ -52,19 +52,19 @@ pip install pdfstract
 # Standard - Adds OCR (pytesseract, unstructured)
 pip install pdfstract[standard]
 
-# Premium - ML-powered (marker, docling, paddleocr, deepseek)
-pip install pdfstract[premium]
+# Advanced - ML-powered (marker, docling, paddleocr, deepseek)
+pip install pdfstract[advanced]
 
-# Full - Everything including chunking
-pip install pdfstract[full]
+# All - All converters combined
+pip install pdfstract[all]
 ```
 
 | Tier | Libraries | Best For |
 |------|-----------|----------|
 | **Base** | pymupdf4llm, markitdown | Fast extraction, simple PDFs |
-| **Standard** | + pytesseract, unstructured | OCR support, structured docs |
-| **Premium** | + marker, docling, paddleocr, deepseek | Best quality, ML-powered |
-| **Full** | All above + chunking | Complete RAG pipeline |
+| **Standard** | pytesseract, unstructured | OCR support, structured docs |
+| **Advanced** | marker, docling, paddleocr, deepseek | Best quality, ML-powered |
+| **All** | All libraries combined | Complete RAG pipeline |
 
 ## Get Started
 
@@ -72,7 +72,6 @@ Ready to dive in? Here are some great starting points:
 
 - **[Quick Start Guide](quick-start)** - Get up and running in 5 minutes
 - **[Installation](installation)** - Install PDFStract in your environment  
-- **[First Conversion](first-conversion)** - Convert your first PDF
 - **[Python API](api/overview)** - Integrate into your applications
 - **[CLI Guide](cli/overview)** - Use from the command line
 - **[Web UI](web-ui/overview)** - Try the visual interface
