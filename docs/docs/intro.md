@@ -27,7 +27,9 @@ PDFStract is designed to get your PDFs ready for AI by providing:
 ## Quick Example
 
 ```python
-from pdfstract = PDFStract()
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
 
 # 1. Convert PDF
 text = pdfstract.convert('document.pdf', library='docling')
@@ -38,6 +40,31 @@ chunks = pdfstract.chunk(text, chunker='semantic', chunk_size=512)
 # 3. Use chunks in your pipeline
 print(f"Ready for embedding: {chunks['total_chunks']} chunks")
 ```
+
+## Installation Tiers
+
+Choose the right tier for your needs:
+
+```bash
+# Base - Fast extractors (pymupdf4llm, markitdown)
+pip install pdfstract
+
+# Standard - Adds OCR (pytesseract, unstructured)
+pip install pdfstract[standard]
+
+# Premium - ML-powered (marker, docling, paddleocr, deepseek)
+pip install pdfstract[premium]
+
+# Full - Everything including chunking
+pip install pdfstract[full]
+```
+
+| Tier | Libraries | Best For |
+|------|-----------|----------|
+| **Base** | pymupdf4llm, markitdown | Fast extraction, simple PDFs |
+| **Standard** | + pytesseract, unstructured | OCR support, structured docs |
+| **Premium** | + marker, docling, paddleocr, deepseek | Best quality, ML-powered |
+| **Full** | All above + chunking | Complete RAG pipeline |
 
 ## Get Started
 

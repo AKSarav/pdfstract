@@ -8,15 +8,32 @@ Get up and running with PDFStract in just a few minutes! This guide will help yo
 
 ## Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11 or higher
 - pip (Python package installer)
 
 ## Installation
 
-Install PDFStract using pip:
+PDFStract offers tiered installation based on your needs:
+
+| Tier | Libraries | Install Command |
+|------|-----------|-----------------|
+| **Base** | pymupdf4llm, markitdown | `pip install pdfstract` |
+| **Standard** | + pytesseract, unstructured | `pip install pdfstract[standard]` |
+| **Premium** | + marker, docling, paddleocr, deepseek | `pip install pdfstract[premium]` |
+| **Full** | All above + chunking | `pip install pdfstract[full]` |
 
 ```bash
+# Quick start with base libraries
 pip install pdfstract
+
+# Recommended for most users
+pip install pdfstract[standard]
+
+# Best quality (larger download)
+pip install pdfstract[premium]
+
+# Everything including chunking
+pip install pdfstract[full]
 ```
 
 For development or latest features:
@@ -57,21 +74,23 @@ print("First chunk:")
 print(chunks['chunks'][0]['text'][:200] + "...")
 ```
 
-## Choose Your Tools
+## Available Libraries by Tier
 
-PDFStract supports multiple libraries for both conversion and chunking:
-
-### PDF Conversion Libraries
-- **docling** (default) - Great all-around performance
-- **marker** - Excellent for complex layouts
+### Base (pip install pdfstract)
 - **pymupdf4llm** - Fast and lightweight
-- **unstructured** - Great for document structure
+- **markitdown** - Microsoft's markdown converter
 
-### Chunking Methods
-- **token** (default) - Simple token-based splitting
-- **semantic** - AI-powered semantic chunking
-- **recursive** - Smart recursive text splitting
-- **code** - Code-aware chunking
+### Standard (pip install pdfstract[standard])
+- All Base libraries plus:
+- **pytesseract** - OCR for scanned PDFs
+- **unstructured** - Smart document parsing
+
+### Premium (pip install pdfstract[premium])
+- All Standard libraries plus:
+- **marker** - Excellent for complex layouts
+- **docling** - IBM's document intelligence
+- **paddleocr** - Accurate OCR engine
+- **deepseek** - GPU-accelerated OCR
 
 Example with specific tools:
 

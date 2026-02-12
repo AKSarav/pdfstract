@@ -6,20 +6,42 @@ sidebar_position: 2
 
 This guide covers all the ways to install PDFStract, from simple pip installation to development setups with Docker.
 
+## Installation Tiers
+
+PDFStract offers tiered installation based on the libraries you need:
+
+| Tier | Libraries | Install Command | Best For |
+|------|-----------|-----------------|----------|
+| **Base** | pymupdf4llm, markitdown | `pip install pdfstract` | Fast extraction, simple PDFs |
+| **Standard** | + pytesseract, unstructured | `pip install pdfstract[standard]` | OCR support, structured docs |
+| **Premium** | + marker, docling, paddleocr, deepseek | `pip install pdfstract[premium]` | Best quality, ML-powered |
+| **Full** | All above + chunking | `pip install pdfstract[full]` | Complete RAG pipeline |
+
 ## Basic Installation
 
 ### Using pip (Recommended)
 
-Install the latest stable version:
-
 ```bash
+# Base - Fast extractors only (pymupdf4llm, markitdown)
 pip install pdfstract
+
+# Standard - Adds OCR libraries (pytesseract, unstructured)
+pip install pdfstract[standard]
+
+# Premium - Adds ML-powered libraries (marker, docling, paddleocr, deepseek)
+pip install pdfstract[premium]
+
+# Full - Everything including chunking support
+pip install pdfstract[full]
+
+# Just add chunking to any tier
+pip install pdfstract[standard,chunking]
 ```
 
-### Using conda
+### Using uv (Fast)
 
 ```bash
-conda install -c conda-forge pdfstract
+uv pip install pdfstract[full]
 ```
 
 ## Development Installation
@@ -35,49 +57,69 @@ cd pdfstract
 
 # Install in development mode
 pip install -e .
+
+# Or with uv
+uv sync
 ```
 
-### With Development Dependencies
+### With All Dependencies
 
-To install with all development tools:
+To install with all libraries for development:
 
 ```bash
 git clone https://github.com/aksarav/pdfstract.git
 cd pdfstract
 
-# Install with dev dependencies
-pip install -e ".[dev]"
+# Install full version in dev mode
+pip install -e ".[full]"
 ```
 
-## Optional Dependencies
+## What's Included in Each Tier
 
-PDFStract uses different libraries for PDF conversion and text chunking. Install only what you need:
-
-### Conversion Libraries
+### Base (Default)
+Libraries visible in dropdown:
+- **pymupdf4llm** - Fast, lightweight PDF extraction
+- **markitdown** - Microsoft's markdown converter
 
 ```bash
-# Install specific converters
-pip install pdfstract[marker]      # Marker converter
-pip install pdfstract[docling]     # Docling converter  
-pip install pdfstract[unstructured] # Unstructured converter
-pip install pdfstract[paddleocr]   # PaddleOCR converter
-pip install pdfstract[tesseract]   # Tesseract OCR
-pip install pdfstract[mineru]      # MinerU converter
-
-# Install all converters
-pip install pdfstract[all-converters]
+pip install pdfstract
 ```
 
-### Chunking Libraries
+### Standard
+All Base libraries plus:
+- **pytesseract** - OCR for scanned PDFs (requires system tesseract)
+- **unstructured** - Smart document parsing
 
 ```bash
-# Advanced chunking methods
-pip install pdfstract[semantic]    # Semantic chunking
-pip install pdfstract[neural]      # Neural chunking
-pip install pdfstract[embeddings]  # Embedding-based chunking
+pip install pdfstract[standard]
+```
 
-# Install all chunkers
-pip install pdfstract[all-chunkers]
+### Premium  
+All Standard libraries plus:
+- **marker** - ML-powered, excellent for complex layouts
+- **docling** - IBM's document intelligence platform
+- **paddleocr** - Accurate OCR engine
+- **deepseek** - GPU-accelerated OCR
+
+```bash
+pip install pdfstract[premium]
+```
+
+### Full
+All Premium libraries plus:
+- **Chunking support** - 10+ chunking methods for RAG pipelines
+
+```bash
+pip install pdfstract[full]
+```
+
+### Chunking Only
+Add chunking to any tier:
+
+```bash
+pip install pdfstract[chunking]
+pip install pdfstract[standard,chunking]
+```
 ```
 
 ### Complete Installation

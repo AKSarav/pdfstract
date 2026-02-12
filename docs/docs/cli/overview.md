@@ -6,6 +6,22 @@ sidebar_position: 1
 
 PDFStract provides a powerful command-line interface for PDF extraction and text chunking with support for batch processing, multi-library comparison, and production automation.
 
+## Installation
+
+```bash
+# Base - Fast extractors (pymupdf4llm, markitdown)
+pip install pdfstract
+
+# Standard - Adds OCR (pytesseract, unstructured)
+pip install pdfstract[standard]
+
+# Premium - ML-powered (marker, docling, paddleocr, deepseek)
+pip install pdfstract[premium]
+
+# Full - Everything including chunking
+pip install pdfstract[full]
+```
+
 ## Quick Start
 
 After installation, use PDFStract from the command line:
@@ -26,6 +42,14 @@ pdfstract convert document.pdf --library marker
 # Batch process multiple files
 pdfstract batch ./pdfs/ --output ./results/
 ```
+
+## Available Libraries by Tier
+
+| Tier | Libraries Available |
+|------|---------------------|
+| **Base** | pymupdf4llm, markitdown |
+| **Standard** | + pytesseract, unstructured |
+| **Premium** | + marker, docling, paddleocr, deepseek |
 
 ## Main Commands
 
