@@ -26,57 +26,11 @@ PDFStract is a tool to get your PDFs ready for AI - Extract Data, Chunk, Embed a
 - ✅ Use the chunks in your RAG pipeline 
 
 
-## ✨ Features
-
-- 🚀 **10+ Conversion Libraries**: PyMuPDF4LLM, MarkItDown, Marker, Docling, PaddleOCR, DeepSeek-OCR, Tesseract, MinerU, Unstructured, and more
-- ✂️ **10+ Chunking Methods**: Token, Sentence, Recursive, Semantic, Code, Neural, Fast (SIMD), and more via Chonkie
-- 📱 **Modern React UI**: Beautiful, responsive design with Tailwind CSS
-- 💻 **Command-Line Interface**: Full CLI with batch processing, chunking, multi-library comparison, and automation
-- 🎯 **Multiple Output Formats**: Markdown, JSON, and Plain Text
-- ⏱️ **Performance Benchmarking**: Real-time timer shows conversion speed for each library
-- 👁️ **Live Preview**: View converted content with syntax highlighting
-- 🔄 **Library Status Dashboard**: See which libraries are available/unavailable with error messages
-- ⬇️ **On-Demand Model Downloads**: Download ML models only when needed
-- 💾 **Easy Download**: Download results in your preferred format
-- 🐳 **Docker Support**: One-command deployment
-- 🔗 **REST API**: Programmatic access to conversion and chunking features
-- ⚡ **Batch Processing**: Parallel conversion of 100+ PDFs with detailed reporting
-- 🌙 **Dark Mode Ready**: Works seamlessly in light and dark themes
 
 ## � Documentation
 
 Visit **[pdfstract.com](https://pdfstract.com)** for full documentation, guides, and examples.
 
-## �📚 Supported Libraries
-
-| Library | Version | Type | Status | Notes |
-|---------|---------|------|--------|-------|
-| **pymupdf4llm** | >=0.0.26 | Text Extraction | Fast | Best for simple PDFs |
-| **markitdown** | >=0.1.2 | Markdown | Balanced | Microsoft's conversion tool |
-| **marker** | >=1.8.1 | Advanced ML | High Quality | Excellent results, slower |
-| **docling** | >=2.41.0 | Document Intelligence | Advanced | IBM's document platform |
-| **mineru** | >=1.3.0 | Advanced ML | ⭐ Best | OpenDataLab's MinerU - formulas, tables, complex layouts *(Docker only)* |
-| **paddleocr** | >=3.3.2 | OCR | Accurate | Great for scanned PDFs |
-| **unstructured** | >=0.15.0 | Document Parsing | Smart | Intelligent element extraction |
-| **deepseekocr** | Latest | GPU OCR | Fast (GPU only) | Requires CUDA GPU |
-| **pytesseract** | >=0.3.10 | OCR | Classic | Tesseract-based (requires system binary) |
-
-## 📦 Supported Chunkers
-
-PDFStract includes 10+ chunking methods powered by [Chonkie](https://github.com/chonkie-inc/chonkie):
-
-| Chunker | Description | Best For |
-|---------|-------------|----------|
-| **token** | Fixed token-based chunking | Simple, predictable chunks |
-| **sentence** | Sentence boundary splitting | Natural text segments |
-| **recursive** | Hierarchical delimiter-based | Structured documents |
-| **table** | Table-aware chunking | Documents with tables |
-| **semantic** | Embedding-based similarity | Topic-coherent chunks |
-| **code** | AST-aware code splitting | Source code files |
-| **fast** | SIMD-accelerated (100+ GB/s) | High-throughput pipelines |
-| **late** | Late interaction chunking | ColBERT-style retrieval |
-| **neural** | ML boundary detection | Complex documents |
-| **slumber** | LLM-powered agentic chunking | Highest quality (requires API key) |
 
 ## 🚀 Quick Start
 
