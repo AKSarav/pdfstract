@@ -1,8 +1,9 @@
-# PDFStract — The Extraction and Chunking Layer in Your RAG Pipeline 
+# PDFStract — Unified PDF Ingestion for RAG Systems
 
-Convert PDFs into chunks and embeddings ready for retrieval-augmented generation.
 
-Available as CLI, Web UI and API — PDFstract is the first tool in your AI RAG pipeline. It's a simple tool to get your PDFs ready for AI, You can Extract Data, Chunk, Embed and use it in your RAG pipeline.
+<p align="center">
+  <img src="uploads/pdfstract-logo.png" width="300" />
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Project-PDFStract-blue" />
@@ -11,301 +12,83 @@ Available as CLI, Web UI and API — PDFstract is the first tool in your AI RAG 
   <img src="https://img.shields.io/github/license/AKSarav/pdfstract" />
 </p>
 
-![PDFStract UI](uploads/Sample1.png)
-![PDFStract UI](uploads/Sample2.png)
+
+**Building RAG or AI knowledge systems?**
 
 
+PDFStract is a unified PDF extraction and document ingestion layer 
+for RAG (Retrieval-Augmented Generation) and LLM pipelines.
 
-### 🚀 What is PDFStract?
-
-PDFStract is a tool to get your PDFs ready for AI - Extract Data, Chunk, Embed and use it in your RAG pipeline:
-
-- ✅ Extract structured text, tables, and metadata from PDFs using various libraries (PyMuPDF4LLM, MarkItDown, Marker, Docling, PaddleOCR, DeepSeek-OCR, Tesseract, MinerU, Unstructured, and more)
-- ✅ Chunk the text into smaller chunks using various libraries (Token, Sentence, Recursive, Table, Semantic, Code, Late, Neural, Slumber, and more)
-- ✅ Embed the chunks using various libraries (Sentence Transformers, OpenAI, etc.)
-- ✅ Use the chunks in your RAG pipeline 
+It standardizes PDF extraction, OCR handling, and text chunking 
+across multiple libraries — so you can build reliable AI knowledge systems 
+without fighting document parsing issues.
 
 
+![alt text](uploads/HeaderImage.png)
 
-## � Documentation
+No single PDF extractor works best for every document.
+PDFStract lets you switch, compare, and automate extraction strategies 
+through a single interface.
 
-Visit **[pdfstract.com](https://pdfstract.com)** for full documentation, guides, and examples.
 
+## Why PDFStract Exists
 
-## 🚀 Quick Start
+Modern RAG and LLM systems depend on clean document ingestion.
 
-### Prerequisites
+But PDF extraction is fragmented:
+- Some libraries work better for structured reports
+- Others perform better on scanned or OCR-heavy documents
+- Output formats vary widely
+- Chunking strategies significantly impact retrieval performance
 
-- **Python**: 3.11+
-- **UV**: Fast Python package manager ([install](https://docs.astral.sh/uv/getting-started/installation/))
-- **Node.js**: 20+ (for frontend development)
-- **Docker** (optional): For containerized deployment
+Teams often waste hours testing combinations manually.
 
-### Installation Tiers
+PDFStract provides:
+- A unified abstraction over multiple PDF extractors
+- Standardized output formats (markdown, json, text)
+- Built-in chunking strategies for RAG pipelines
+- Easy benchmarking and comparison between libraries
 
-PDFStract offers tiered installation based on the libraries you need:
+It becomes the standardized ingestion layer of your AI data pipeline.
 
-| Tier | Libraries | Install Command | Best For |
-|------|-----------|-----------------|----------|
-| **Base** | pymupdf4llm, markitdown | `pip install pdfstract` | Fast extraction, simple PDFs |
-| **Standard** | pytesseract, unstructured | `pip install pdfstract[standard]` | OCR support, structured docs |
-| **Advanced** | marker, docling, paddleocr, deepseek | `pip install pdfstract[advanced]` | Best quality, ML-powered |
-| **All** | All libraries combined | `pip install pdfstract[all]` | Complete RAG pipeline |
+Get started in two lines
 
-### Quick Install
+```python
+from pdfstract import PDFStract, convert_pdf, chunk_text
+
+text = convert_pdf("report.pdf", library="auto")
+chunks = chunk_text(text, chunker="semantic", chunk_size=512)
+```
+
+## What Makes PDFStract Different?
+
+Instead of committing to a single PDF extraction library,
+PDFStract lets you:
+
+- Swap extractors with one parameter
+- Benchmark multiple libraries on the same document
+- Automate library selection
+- Standardize downstream processing
+- Keep your ingestion layer future-proof
+
+As new extraction libraries emerge,
+PDFStract allows you to integrate them without rewriting your pipeline
+
+>PDFStract decouples your ingestion layer from any single extraction library.
+
+## Installation and Usage
+
+Choose based on required extraction libraries.
 
 ```bash
-# Base - Fast extractors only (pymupdf4llm, markitdown)
 pip install pdfstract
-
-# Standard - Adds OCR libraries (pytesseract, unstructured)
 pip install pdfstract[standard]
-
-# Advanced - Adds ML-powered libraries (marker, docling, paddleocr, deepseek)
 pip install pdfstract[advanced]
-
-# All - All converters combined (standard + advanced)
 pip install pdfstract[all]
 ```
 
-> **For the best experience with all libraries including MinerU, use [Docker](#running-with-docker-recommended).**
 
-### From Source
-
-1. **Clone the repository**:
-```bash
-git clone https://github.com/aksarav/pdfstract.git
-cd pdfstract
-```
-
-2. **Install Python dependencies**:
-```bash
-uv sync
-```
-
-3. **Install frontend dependencies**:
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-### Running Locally
-
-**Terminal 1: Start the FastAPI Backend**
-```bash
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-**Terminal 2: Start the React Frontend (Development)**
-```bash
-cd frontend
-npm run dev
-```
-
-**Access the Application**:
-- Frontend: http://localhost:5173 (with hot-reload)
-- Backend API: http://localhost:8000
-
-**Note**: The frontend development server proxies API calls to the backend at port 8000 (configured in `frontend/vite.config.js`)
-
-### Production Build
-
-To build the React app for production:
-```bash
-cd frontend
-npm run build
-```
-
-This creates an optimized build in `frontend/dist/` which gets copied to `/static` by the Docker build process.
-
-### Running with Docker (Recommended)
-
-**Docker provides the full PDFStract experience** with all libraries including MinerU (which has platform-specific dependencies).
-
-```bash
-# Download models and start services (first time)
-make up
-
-# Or step by step:
-make models   # Download HuggingFace/MinerU models (~10GB)
-make build    # Build Docker images
-make up       # Start services
-
-# Other useful commands:
-make logs     # View container logs
-make down     # Stop services
-make clean    # Remove containers and volumes
-make status   # Show running containers
-make rebuild  # Rebuild and restart
-```
-
-The application will be available at:
-- **Web UI**: http://localhost:3000
-- **API**: http://localhost:8000
-
-> **Note**: MinerU (the highest-quality converter) is only available in Docker due to platform-specific dependencies. For the best PDF extraction experience, we recommend using Docker.
-
----
-
-# � Using PDFStract as a Python Library
-
-You don't need to use the CLI! PDFStract can be easily integrated into your Python applications as a library.
-
-## Installation
-
-```bash
-pip install pdfstract
-```
-
-## Simple Examples
-
-### Convert a PDF (One-liner)
-
-```python
-from pdfstract import convert_pdf
-
-# Quick conversion with default settings
-result = convert_pdf('sample.pdf', library='marker')
-print(result)  # Markdown content
-```
-
-### List Available Libraries
-
-```python
-from pdfstract import PDFStract
-
-pdfstract = PDFStract()
-
-# Get list of available libraries
-available = pdfstract.list_available_libraries()
-print(available)  # ['pymupdf4llm', 'marker', 'docling', ...]
-```
-
-### Structured Conversion
-
-```python
-from pdfstract import PDFStract
-
-pdfstract = PDFStract()
-
-# Convert with options
-result = pdfstract.convert(
-    pdf_path='document.pdf',
-    library='marker',
-    output_format='markdown'  # or 'json', 'text'
-)
-```
-
-### Batch Processing Multiple PDFs
-
-```python
-from pdfstract import PDFStract
-
-pdfstract = PDFStract()
-
-# Convert all PDFs in a directory in parallel
-results = pdfstract.batch_convert(
-    pdf_directory='./pdfs',
-    library='pymupdf4llm',
-    output_format='markdown',
-    parallel_workers=4
-)
-
-print(f"✓ Success: {results['success']}")
-print(f"✗ Failed: {results['failed']}")
-```
-
-### Async Conversion (for Web Apps)
-
-```python
-import asyncio
-from pdfstract import PDFStract
-
-async def process_pdfs():
-    pdfstract = PDFStract()
-    result = await pdfstract.convert_async(
-        'document.pdf',
-        library='docling',
-        output_format='json'
-    )
-    return result
-
-# Use in FastAPI, asyncio, etc.
-asyncio.run(process_pdfs())
-```
-
-### Text Chunking for RAG Pipelines
-
-```python
-from pdfstract import PDFStract
-
-pdfstract = PDFStract()
-
-# 1. Extract PDF
-text = pdfstract.convert('document.pdf', library='docling')
-
-# 2. Chunk the text
-chunks = pdfstract.chunk(
-    text=text,
-    chunker='semantic',  # or 'token', 'sentence', 'code', etc.
-    chunk_size=512
-)
-
-print(f"Created {chunks['total_chunks']} chunks")
-
-# 3. Process chunks for embedding/indexing
-for chunk in chunks['chunks']:
-    print(f"- {chunk['text'][:50]}... ({chunk['token_count']} tokens)")
-```
-
-### Quick Chunking (One-liner)
-
-```python
-from pdfstract import chunk_text
-
-result = chunk_text("Your long text...", chunker='token', chunk_size=256)
-print(f"Chunks: {result['total_chunks']}")
-```
-
-### Available Chunkers
-
-```python
-from pdfstract import PDFStract, list_available_chunkers
-
-# Quick list
-chunkers = list_available_chunkers()
-
-# Detailed info
-pdfstract = PDFStract()
-for chunker_info in pdfstract.list_chunkers():
-    print(f"{chunker_info['name']}: {'✓' if chunker_info['available'] else '✗'}")
-```
-
-### Error Handling
-
-```python
-from pdfstract import PDFStract
-
-pdfstract = PDFStract()
-
-try:
-    result = pdfstract.convert('file.pdf', 'marker')
-except FileNotFoundError:
-    print("PDF file not found")
-except ValueError as e:
-    print(f"Library error: {e}")
-```
-
-For more advanced examples, see [examples_library_usage.py](examples_library_usage.py)
-
----
-
-# �🖥️ Command-Line Interface (CLI)
-
-PDFStract includes a powerful CLI for batch processing and automation.
-
-### Quick CLI Examples
+### CLI Usage
 
 ```bash
 # List available libraries
@@ -333,105 +116,137 @@ pdfstract batch ./documents --library pymupdf4llm --output ./converted --paralle
 pdfstract download marker
 ```
 
-### CLI Commands
+### Module Usage with Python 
 
-| Command | Description |
-|---------|-------------|
-| `pdfstract libs` | List all available extraction libraries and their status |
-| `pdfstract chunkers` | List all available chunkers and their parameters |
-| `pdfstract convert` | Convert a single PDF file |
-| `pdfstract chunk` | Chunk a text/markdown file |
-| `pdfstract convert-chunk` | Convert PDF and chunk in one step |
-| `pdfstract compare` | Compare multiple libraries on one PDF |
-| `pdfstract batch` | Batch convert multiple PDFs in parallel |
-| `pdfstract batch-compare` | Compare libraries across multiple PDFs |
-| `pdfstract download` | Download models for a specific library |
+You don't need to use the CLI! PDFStract can be easily integrated into your Python applications as a library. 
 
-### CLI Features
+#### Convert a PDF (One-liner)
 
-✨ **Full Features:**
-- Single file conversion with any library
-- **Text chunking** with 10+ chunking methods
-- **Convert + Chunk** in a single command
-- Multi-library comparison
-- Parallel batch processing (1-16 workers)
-- On-demand model downloads
-- JSON reporting with detailed statistics
-- Progress indicators and rich formatting
+```python
+from pdfstract import convert_pdf
 
-📊 **Batch Processing:**
-- Convert 1000+ PDFs with parallel workers
-- Detailed JSON reports (success rate, per-file status)
-- Automatic error handling and logging
-- Perfect for production jobs and legacy migrations
-
-→ **[Full CLI Documentation](CLI_README.md)** - See complete guide with real-world examples
-
----
-
-# API 
-
-## API Endpoints
-
-| Endpoint | Method | Description | Parameters |
-|----------|--------|-------------|-----------|
-| `/` | GET | Web interface | - |
-| `/health` | GET | Health check | - |
-| `/libraries` | GET | List available libraries with status | - |
-| `/libraries/{name}/status` | GET | Get detailed status for a library | - |
-| `/libraries/{name}/download` | POST | Download models for a library | - |
-| `/convert` | POST | Convert PDF | `file`, `library`, `output_format` |
-| `/chunkers` | GET | List available chunkers | - |
-| `/chunk` | POST | Chunk raw text | `text`, `chunker`, `params` |
-| `/convert-and-chunk` | POST | Convert PDF and chunk | `file`, `library`, `chunker`, `output_format`, `chunker_params` |
-| `/compare` | POST | Compare multiple libraries | `file`, `libraries[]`, `output_format` |
-| `/compare/{task_id}` | GET | Get comparison task status | - |
-
-## API Examples
-
-**List available libraries**:
-```bash
-curl http://localhost:8000/libraries
+# Quick conversion with default settings
+result = convert_pdf('sample.pdf', library='marker')
+print(result)  # Markdown content
 ```
 
-**List available chunkers**:
-```bash
-curl http://localhost:8000/chunkers
+#### List Available Libraries
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+# Get list of available libraries
+available = pdfstract.list_available_libraries()
+print(available)  # ['pymupdf4llm', 'marker', 'docling', ...]
 ```
 
-**Convert a PDF**:
-```bash
-curl -X POST \
-  -F "file=@sample.pdf" \
-  -F "library=pymupdf4llm" \
-  -F "output_format=markdown" \
-  http://localhost:8000/convert
+#### Structured Conversion
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+# Convert with options
+result = pdfstract.convert(
+    pdf_path='document.pdf',
+    library='marker',
+    output_format='markdown'  # or 'json', 'text'
+)
 ```
 
-**Convert and Chunk in one request**:
-```bash
-curl -X POST \
-  -F "file=@sample.pdf" \
-  -F "library=pymupdf4llm" \
-  -F "chunker=semantic" \
-  -F "output_format=markdown" \
-  -F "chunker_params={\"chunk_size\": 512}" \
-  http://localhost:8000/convert-and-chunk
+#### Batch Processing Multiple PDFs
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+# Convert all PDFs in a directory in parallel
+results = pdfstract.batch_convert(
+    pdf_directory='./pdfs',
+    library='pymupdf4llm',
+    output_format='markdown',
+    parallel_workers=4
+)
+
+print(f"✓ Success: {results['success']}")
+print(f"✗ Failed: {results['failed']}")
 ```
 
-**Chunk raw text**:
-```bash
-curl -X POST \
-  -F "text=Your long document text here..." \
-  -F "chunker=token" \
-  -F "params={\"chunk_size\": 256}" \
-  http://localhost:8000/chunk
+#### Async Conversion (for Web Apps)
+
+```python
+import asyncio
+from pdfstract import PDFStract
+
+async def process_pdfs():
+    pdfstract = PDFStract()
+    result = await pdfstract.convert_async(
+        'document.pdf',
+        library='docling',
+        output_format='json'
+    )
+    return result
+
+# Use in FastAPI, asyncio, etc.
+asyncio.run(process_pdfs())
 ```
 
-**Download models for a library**:
-```bash
-curl -X POST http://localhost:8000/libraries/marker/download
+#### Text Chunking for RAG Pipelines
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+# 1. Extract PDF
+text = pdfstract.convert('document.pdf', library='docling')
+
+# 2. Chunk the text
+chunks = pdfstract.chunk(
+    text=text,
+    chunker='semantic',  # or 'token', 'sentence', 'code', etc.
+    chunk_size=512
+)
+
+print(f"Created {chunks['total_chunks']} chunks")
+
+# 3. Process chunks for embedding/indexing
+for chunk in chunks['chunks']:
+    print(f"- {chunk['text'][:50]}... ({chunk['token_count']} tokens)")
 ```
+
+### Powerful Web UI
+
+```python
+# Clone the repository
+git clone https://github.com/aksarav/pdfstract.git
+cd pdfstract
+
+# Download models and start services (first time)
+make up
+
+# Or step by step:
+make models   # Download HuggingFace/MinerU models (~10GB)
+make build    # Build Docker images
+make up       # Start services
+```
+
+
+![PDFStract UI](uploads/Sample1.png)
+
+![PDFStract UI](uploads/Sample2.png)
+
+
+## Used For
+
+- RAG systems
+- Document intelligence pipelines
+- Knowledge base ingestion
+- LLM fine-tuning datasets
 
 
 ## 🤝 Contributing
@@ -450,16 +265,5 @@ If you encounter issues or have questions - please create an issue
 
 ## 🌟 Please leave a star if you find this project useful
 
-## 🙏 Acknowledgments
-
-- **FastAPI**: Modern Python web framework
-- **React**: UI library
-- **Tailwind CSS**: Utility-first CSS framework
-- **Lucide Icons**: Beautiful icon library
-- **Chonkie**: Text chunking library for RAG pipelines
-- **MinerU**: OpenDataLab's high-quality PDF extraction tool
-- All the amazing PDF extraction libraries (PyMuPDF, Marker, Docling, etc.)
-
----
 
 **Made with ❤️ for AI RAG pipelines**
