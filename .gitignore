@@ -12,3 +12,5 @@ pdfstract-311/
 tests/results/*
 hf-cache/*
 ultralytics-cache/*
+results/
+*chunks.json

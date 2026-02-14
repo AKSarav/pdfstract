@@ -54,25 +54,33 @@ from pdfstract import PDFStract
 # Initialize PDFStract
 pdfstract = PDFStract()
 
-# Convert PDF to text
-text = pdfstract.convert('your-document.pdf')
+# Convert PDF to text (use 'auto' to select best available library)
+text = pdfstract.convert('your-document.pdf', library='auto')
 
 print("Extracted text:")
 print(text[:500] + "...")  # Show first 500 characters
 ```
+
+:::tip Auto Mode
+Set `library='auto'` to automatically select the best available converter based on priority: `pymupdf4llm` → `markitdown` → `marker` → `docling` → etc. This ensures your code works regardless of which tier you installed!
+:::
 
 ## Create Your First Chunks
 
 Now let's chunk that text for RAG applications:
 
 ```python
-# Chunk the text for RAG
-chunks = pdfstract.chunk(text, chunk_size=512, chunk_overlap=50)
+# Chunk the text for RAG (use 'auto' to select best available chunker)
+chunks = pdfstract.chunk(text, chunker='auto', chunk_size=512, chunk_overlap=50)
 
 print(f"Created {chunks['total_chunks']} chunks")
 print("First chunk:")
 print(chunks['chunks'][0]['text'][:200] + "...")
 ```
+
+:::tip Auto Mode for Chunking
+Set `chunker='auto'` to automatically select the best available method (typically `token` chunker). For semantic chunking, explicitly specify `chunker='semantic'`.
+:::
 
 ## Available Libraries by Tier
 

@@ -58,6 +58,15 @@ class CLILazyFactory:
     
     def get_converter(self, name: str) -> Optional[PDFConverter]:
         """Get converter (lazy load if needed)"""
+        if name == 'auto':
+            # Auto-select the first available converter based on priority
+            for converter_name in self._converter_classes.keys():
+                converter = self._load_converter(converter_name)
+                if converter and converter.available:
+                    logger.info(f"Auto-selected converter: {converter_name}")
+                    return converter
+            logger.info("No available converters found for auto-selection")
+            return None
         return self._load_converter(name)
     
     def list_available_converters(self) -> List[str]:
@@ -116,3 +125,12 @@ class CLILazyFactory:
         else:
             raise ValueError(f"Unsupported output format: {output_format}")
 
+    def get_default_library(self) -> Optional[str]:
+        """Get the default library (first available in priority order)"""
+        for name in self._converter_classes.keys():
+            converter = self._load_converter(name)
+            if converter and converter.available:
+                logger.info(f"Auto-Selected library: {name}")
+                return name
+        logger.warning("No available libraries found for default selection")
+        return None

@@ -52,10 +52,10 @@ print(f"Converted PDF to {chunks['total_chunks']} chunks")
 Convert PDFs to text using various libraries:
 
 ```python
-# Basic conversion
-text = pdfstract.convert('document.pdf')
+# Auto mode (selects best available library)
+text = pdfstract.convert('document.pdf', library='auto')
 
-# With specific library
+# Explicit library selection
 text = pdfstract.convert('document.pdf', library='marker')
 
 # With options
@@ -67,7 +67,8 @@ text = pdfstract.convert('document.pdf',
 
 **Parameters:**
 - `file_path` (str): Path to PDF file
-- `library` (str): Conversion library ('docling', 'marker', 'pymupdf4llm', etc.)
+- `library` (str, **required**): Conversion library ('auto', 'docling', 'marker', 'pymupdf4llm', etc.)
+  - Use `library='auto'` to automatically select the best available library
 - `preserve_structure` (bool): Keep document structure
 - `extract_images` (bool): Extract embedded images
 - `pages` (list): Specific pages to convert
@@ -75,15 +76,27 @@ text = pdfstract.convert('document.pdf',
 
 **Returns:** Extracted text as string
 
+:::info Auto Selection Priority
+When using `library='auto'`, libraries are selected in this order:
+1. pymupdf4llm (fastest)
+2. markitdown (balanced)
+3. marker (high quality)
+4. docling (document intelligence)
+5. paddleocr, unstructured, pytesseract (if installed)
+:::
+
 ### chunk()
 
 Split text into chunks for RAG applications:
 
 ```python
-# Basic chunking
-chunks = pdfstract.chunk(text)
+# Auto mode (selects best available chunker)
+chunks = pdfstract.chunk(text, chunker='auto')
 
-# Semantic chunking
+# Explicit chunker selection
+chunks = pdfstract.chunk(text, chunker='semantic')
+
+# With full options
 chunks = pdfstract.chunk(text, 
                         chunker='semantic',
                         chunk_size=1024,
@@ -97,7 +110,8 @@ chunks = pdfstract.chunk(code_text,
 
 **Parameters:**
 - `text` (str): Text to chunk
-- `chunker` (str): Chunking method ('token', 'semantic', 'recursive', etc.)
+- `chunker` (str, **required**): Chunking method ('auto', 'token', 'semantic', 'recursive', etc.)
+  - Use `chunker='auto'` to automatically select the best available chunker
 - `chunk_size` (int): Target chunk size in tokens
 - `chunk_overlap` (int): Overlap between chunks
 - `**kwargs`: Chunker-specific options

@@ -929,6 +929,14 @@ def convert_chunk(
     """
     cli_app.print_banner()
     
+    # if chunker and library is set to auto, use defaults
+    if library == 'auto':
+        if get_default_library := get_factory().get_default_library():
+            library = get_default_library
+        else:
+            library = 'pymupdf4llm'
+        cli_app.print_info(f"Auto-selected library: {library}")
+    
     # Validate inputs
     if not input_file.exists():
         cli_app.print_error(f"File not found: {input_file}")

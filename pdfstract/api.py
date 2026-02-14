@@ -342,6 +342,12 @@ class PDFStract:
         factory = get_chunker_factory()
         available = factory.list_available_chunkers()
         
+        if chunker == 'auto':
+            chunker_instance = factory.get_default_chunker()
+            if not chunker_instance:
+                raise ValueError("No available chunkers found for auto-selection")
+            chunker = chunker_instance.name
+        
         if chunker not in available:
             raise ValueError(
                 f"Chunker '{chunker}' not available. Available: {available}"
@@ -443,6 +449,63 @@ class PDFStract:
         all_libs = self.list_libraries()
         return next((lib for lib in all_libs if lib["name"] == library), None)
 
+    async def convert_chunk_async(
+        self,
+        pdf_path: Union[str, Path],
+        library: str,
+        chunker: str,
+        output_format: str = "markdown",
+        chunker_params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Convert PDF and chunk the extracted text in one step (asynchronous)
+        
+        Args:
+            pdf_path: Path to PDF file
+            library: Extraction library to use
+            chunker: Chunker to use for chunking extracted text
+            output_format: Output format for extraction (default: 'markdown')
+            chunker_params: Optional dict of parameters to pass to the chunker
+            
+        Returns:
+            Dict with 'extracted_content' and 'chunking_result'
+        """
+        extracted_content = await self.convert_async(pdf_path, library, output_format)
+        chunking_result = await self.chunk_text_async(
+            text=extracted_content if isinstance(extracted_content, str) else str(extracted_content),
+            chunker=chunker,
+            **(chunker_params or {})
+        )
+        return {
+            "extracted_content": extracted_content,
+            "chunking_result": chunking_result
+        }
+
+    def convert_chunk(
+        self,
+        pdf_path: Union[str, Path],
+        library: str,
+        chunker: str,
+        output_format: str = "markdown",
+        chunker_params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Convert PDF and chunk the extracted text in one step
+        
+        Args:
+            pdf_path: Path to PDF file
+            library: Extraction library to use
+            chunker: Chunker to use for chunking extracted text
+            output_format: Output format for extraction (default: 'markdown')
+            chunker_params: Optional dict of parameters to pass to the chunker
+            
+        Returns:
+            Dict with 'extracted_content' and 'chunking_result'
+        """
+        import asyncio
+        return asyncio.run(
+            self.convert_chunk_async(
+                pdf_path, library, chunker, output_format, chunker_params or {}
+            )
+        )
 
 # ============================================================================
 # Convenience functions for quick usage

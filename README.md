@@ -54,10 +54,19 @@ It becomes the standardized ingestion layer of your AI data pipeline.
 Get started in two lines
 
 ```python
-from pdfstract import PDFStract, convert_pdf, chunk_text
+from pdfstract import PDFStract
+ps=PDFStract()
+# convert and chunk in a single step with auto mode
+chunks=ps.convert_chunk("path/to/pdf", library="auto", chunker="auto")
 
-text = convert_pdf("report.pdf", library="auto")
-chunks = chunk_text(text, chunker="semantic", chunk_size=512)
+# or do it in two steps
+# convert first with your library of choice
+md_content=ps.convert("path/to/pdf", library="docling")
+
+# chunk with your chunking technique of choice
+# Chunk the text
+chunks = pdfstract.chunk(text, chunker='token' chunk_size=512, chunk_overlap=50)
+
 ```
 
 ## What Makes PDFStract Different?

@@ -20,6 +20,15 @@ class ChunkerFactory:
     def __init__(self):
         self._chunkers: Dict[str, BaseChunker] = {}
         self._register_default_chunkers()
+        
+    def get_default_chunker(self) -> Optional[BaseChunker]:
+        """Get the default chunker (first available in priority order)"""
+        for name, chunker in self._chunkers.items():
+            if chunker.available:
+                logger.info(f"Auto-Selected chunker: {name}")
+                return chunker
+        logger.warning("No available chunkers found for default selection")
+        return None        
     
     def _register_default_chunkers(self):
         """Register all available chunker implementations"""
@@ -137,11 +146,7 @@ class ChunkerFactory:
         chunker = self.get_chunker(chunker_name)
         
         if not chunker:
-            available = self.list_available_chunkers()
-            raise ValueError(
-                f"Chunker '{chunker_name}' not found. "
-                f"Available chunkers: {', '.join(available)}"
-            )
+            chunker = self.get_default_chunker()
         
         if not chunker.available:
             raise ValueError(
@@ -170,14 +175,14 @@ class ChunkerFactory:
         Raises:
             ValueError: If chunker not found or not available
         """
-        chunker = self.get_chunker(chunker_name)
         
-        if not chunker:
-            available = self.list_available_chunkers()
-            raise ValueError(
-                f"Chunker '{chunker_name}' not found. "
-                f"Available chunkers: {', '.join(available)}"
-            )
+        if chunker_name == 'auto':
+            chunker = self.get_default_chunker()
+            if not chunker:
+                raise ValueError("No available chunkers found for auto-selection")
+        else:
+            if not (chunker := self.get_chunker(chunker_name)):
+                raise ValueError(f"Chunker '{chunker_name}' not found")
         
         if not chunker.available:
             raise ValueError(

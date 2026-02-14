@@ -58,33 +58,44 @@ pdfstract batch ./pdfs/ --output ./results/
 Convert a single PDF to text:
 
 ```bash
-# Basic conversion
-pdfstract convert document.pdf
+# Auto mode (selects best available library)
+pdfstract convert document.pdf --library auto
 
 # With specific converter
 pdfstract convert document.pdf --library docling
 
 # Save to specific file
-pdfstract convert document.pdf --output result.txt
+pdfstract convert document.pdf --library marker --output result.txt
 
 # Convert specific pages
-pdfstract convert document.pdf --pages 1-5,10
+pdfstract convert document.pdf --library auto --pages 1-5,10
 ```
+
+:::tip Auto Library Selection
+Use `--library auto` to automatically select the best available converter based on your installation tier. This makes your commands portable across different environments!
+:::
 
 ### chunk  
 
 Chunk text using various methods:
 
 ```bash
-# Chunk a text file
-pdfstract chunk text_file.txt
+# Auto mode (selects best available chunker)
+pdfstract chunk text_file.txt --chunker auto
 
 # With specific chunker
 pdfstract chunk text_file.txt --chunker semantic --size 512
 
-# Chunk PDF directly
+# Chunk PDF directly with auto selection
+pdfstract chunk document.pdf --chunker auto --overlap 50
+
+# Recursive chunking
 pdfstract chunk document.pdf --chunker recursive --overlap 50
 ```
+
+:::tip Auto Chunker Selection
+Use `--chunker auto` to automatically select the best available chunking method. Great for scripts that need to work across different installations!
+:::
 
 ### process
 
