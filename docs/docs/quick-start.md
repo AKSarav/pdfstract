@@ -82,6 +82,26 @@ print(chunks['chunks'][0]['text'][:200] + "...")
 Set `chunker='auto'` to automatically select the best available method (typically `token` chunker). For semantic chunking, explicitly specify `chunker='semantic'`.
 :::
 
+## Generate Embeddings
+
+PDFStract can produce vector embeddings using multiple providers. Embeddings are useful for indexing, semantic search, and RAG pipelines.
+
+```python
+# Embed a list of texts using auto-selected provider
+from pdfstract import embed_texts
+vecs = embed_texts(["First sentence", "Second sentence"], model='auto')
+print(len(vecs[0]))
+
+# Embed a single text
+from pdfstract import embed_text
+e = embed_text("Hello world", model='sentence-transformers')
+```
+
+Notes:
+- For OpenAI/Azure/Google you must set appropriate environment variables (e.g. `OPENAI_API_KEY`, `AZURE_OPENAI_KEY`, `GOOGLE_API_KEY`).
+- For Ollama, ensure a local Ollama daemon is running (`OLLAMA_HOST`) and set `OLLAMA_MODEL` if needed.
+- Use `model='auto'` to allow PDFStract to pick the best available provider.
+
 ## Available Libraries by Tier
 
 ### Base (pip install pdfstract)

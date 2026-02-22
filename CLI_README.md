@@ -139,6 +139,10 @@ pdfstract compare sample.pdf -l marker -l docling -l pymupdf4llm
 | **code** | Source code |
 | **fast** | High throughput |
 
+## Embeddings
+
+PDFStract can generate embeddings using multiple providers (OpenAI, Azure OpenAI, Google Generative, Ollama, Sentence-Transformers, Model2Vec). Use the Python API `embed_text` / `embed_texts` or the CLI `pdfstract embeddings-list` and `pdfstract embed-text` commands. Hosted providers require API keys; local providers require installed models or running services.
+
 ## Web UI & Docker
 
 ```bash

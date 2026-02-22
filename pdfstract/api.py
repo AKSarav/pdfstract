@@ -507,6 +507,45 @@ class PDFStract:
             )
         )
 
+    # ===== EMBEDDINGS API =====
+
+    async def embed_texts_async(self, texts: List[str], model: str = "auto") -> List[List[float]]:
+        """Embed multiple texts asynchronously using the specified model/provider.
+
+        Args:
+            texts: List of input strings to embed
+            model: Embedding provider name (e.g., 'openai', 'sentence-transformers', or 'auto')
+
+        Returns:
+            List of vectors (one per input text)
+        """
+        from services.embeddings_factory import get_embeddings_factory
+
+        factory = get_embeddings_factory()
+        return await factory.embed_texts_async(model, texts)
+
+    def embed_texts(self, texts: List[str], model: str = "auto") -> List[List[float]]:
+        """Synchronous wrapper for embedding multiple texts."""
+        import asyncio
+        return asyncio.run(self.embed_texts_async(texts, model))
+
+    async def embed_text_async(self, text: str, model: str = "auto") -> List[float]:
+        """Embed a single text asynchronously."""
+        vecs = await self.embed_texts_async([text], model)
+        return vecs[0]
+
+    def embed_text(self, text: str, model: str = "auto") -> List[float]:
+        """Synchronous wrapper to embed a single text."""
+        import asyncio
+        return asyncio.run(self.embed_text_async(text, model))
+
+    def list_available_embeddings(self) -> List[str]:
+        """List available embedding providers."""
+        from services.embeddings_factory import get_embeddings_factory
+
+        factory = get_embeddings_factory()
+        return factory.list_available_embeddings()
+
 # ============================================================================
 # Convenience functions for quick usage
 # ============================================================================
@@ -583,3 +622,31 @@ def list_available_chunkers() -> List[str]:
     """
     pdfstract = PDFStract()
     return pdfstract.list_available_chunkers()
+
+
+def list_available_embeddings() -> List[str]:
+    """Quick function to list available embedding providers
+
+    Example:
+        >>> from pdfstract import list_available_embeddings
+        >>> print(list_available_embeddings())
+    """
+    pdfstract = PDFStract()
+    return pdfstract.list_available_embeddings()
+
+
+def embed_texts(texts: List[str], model: str = "auto") -> List[List[float]]:
+    """Quick convenience function to embed multiple texts.
+
+    Args:
+        texts: List of strings to embed
+        model: Embedding provider name or 'auto'
+    """
+    pdfstract = PDFStract()
+    return pdfstract.embed_texts(texts, model)
+
+
+def embed_text(text: str, model: str = "auto") -> List[float]:
+    """Quick convenience function to embed a single text."""
+    pdfstract = PDFStract()
+    return pdfstract.embed_text(text, model)

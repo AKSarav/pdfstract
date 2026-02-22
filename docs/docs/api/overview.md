@@ -178,6 +178,29 @@ info = pdfstract.get_chunker_info('semantic')
 print(f"Semantic chunker: {info}")
 ```
 
+### embeddings
+
+Generate vector embeddings for text using pluggable providers.
+
+```python
+# Embed multiple texts (synchronous)
+from pdfstract import embed_texts
+vectors = embed_texts(["First sentence.", "Second sentence."], model='auto')
+
+# Using the PDFStract object (async + sync)
+pdf = PDFStract()
+vecs = pdf.embed_texts(["Hello world"], model='sentence-transformers')
+print(len(vecs[0]))  # embedding dimension
+```
+
+Parameters:
+- `texts` (List[str]): List of strings to embed
+- `model` (str): Provider name (`openai`, `azure-openai`, `google-generative`, `ollama`, `sentence-transformers`, `model2vec`) or `'auto'` to select the default provider
+
+Notes:
+- Credentials are validated internally and a clear error is raised if required environment variables are missing.
+- For hosted providers set `OPENAI_API_KEY`, `AZURE_OPENAI_KEY`, `GOOGLE_API_KEY`, etc. For Ollama, ensure a local Ollama daemon is running.
+
 ## Convenience Functions
 
 PDFStract also provides standalone functions for quick operations:

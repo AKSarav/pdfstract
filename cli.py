@@ -28,9 +28,10 @@ from services.chunker_factory import get_chunker_factory
 
 # Import version for --version option (reads from api module which reads from pyproject.toml)
 try:
-    from api import __version__
+    import importlib.metadata
+    __version__ = importlib.metadata.version("pdfstract")
 except ImportError:
-    __version__ = "1.1.0"  # Fallback version
+    __version__ = ""  # Fallback version
 
 # Rich console for beautiful output
 console = Console()
@@ -213,52 +214,88 @@ def download(library_name: str, download_all: bool):
                 cli_app.print_error(f"{lib_name}: {str(e)}")
         
         return
-    
-    # Download single library
-    status = factory.get_converter_status(library_name)
-    if not status:
-        cli_app.print_error(f"Library '{library_name}' not found")
-        cli_app.print_info(f"Available libraries: {', '.join(factory.list_available_converters())}")
-        sys.exit(1)
-    
-    if not status.get("available"):
-        cli_app.print_error(f"Library '{library_name}' is not installed. Install the Python package first.")
-        sys.exit(1)
-    
-    if not status.get("requires_download"):
-        cli_app.print_info(f"Library '{library_name}' does not require model downloads")
-        return
-    
-    if status.get("download_status") == "ready":
-        cli_app.print_success(f"Library '{library_name}' models are already downloaded")
-        return
-    
-    cli_app.print_info(f"Downloading models for {library_name}...")
-    cli_app.print_info("This may take several minutes depending on your internet connection")
-    
-    try:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console
-        ) as progress:
-            task = progress.add_task(f"Downloading {library_name} models...", total=None)
-            result = asyncio.run(factory.prepare_converter(library_name))
-            progress.stop()
-        
-        if result["success"]:
-            cli_app.print_success(result.get("message", f"Models for {library_name} downloaded successfully"))
+
+
+@pdfstract.command()
+def embeddings_list():
+    """List embedding providers and their status"""
+    cli_app.print_banner()
+    from services.embeddings_factory import get_embeddings_factory
+
+    factory = get_embeddings_factory()
+    table = Table(title="Embedding Providers", show_lines=True)
+    table.add_column("Provider", style="cyan")
+    table.add_column("Installed", style="green")
+    table.add_column("Available", style="green")
+    table.add_column("Credentials", style="yellow")
+    table.add_column("Notes", style="magenta")
+
+    for name in factory._provider_classes.keys():
+        inst = factory._load_provider(name)
+        installed = "Yes" if inst is not None else "No"
+        available = "Yes" if (inst and inst.available) else "No"
+        creds = "N/A"
+        notes = ""
+        if inst is None:
+            notes = "Provider module not installed"
         else:
-            cli_app.print_error(result.get("error", "Download failed"))
-            sys.exit(1)
-            
-    except KeyboardInterrupt:
-        cli_app.print_warning("Download interrupted")
+            try:
+                ok, msg = inst.validate_credentials()
+                creds = "OK" if ok else "Missing"
+                if msg:
+                    notes = msg
+            except Exception as e:
+                creds = "Error"
+                notes = str(e)
+
+        table.add_row(name, installed, available, creds, notes)
+
+    console.print(table)
+
+
+@pdfstract.command()
+@click.option('--file', '-f', 'file_path', type=click.Path(exists=True), help='Path to file to embed (reads whole file)')
+@click.option('--text', '-t', 'text_input', type=str, help='Text to embed')
+@click.option('--model', '-m', default='auto', help="Embedding provider/model to use (or 'auto')")
+@click.option('--output', '-o', 'output_path', type=click.Path(), help='Output JSON file to write embeddings')
+def embed_text(file_path: Optional[str], text_input: Optional[str], model: str, output_path: Optional[str]):
+    """Embed a single text or file using an embedding provider"""
+    cli_app.print_banner()
+    from services.embeddings_factory import get_embeddings_factory
+    import json
+
+    if not file_path and not text_input:
+        # read from stdin
+        cli_app.print_info('Reading text from stdin (end with EOF)')
+        text = sys.stdin.read()
+    elif file_path:
+        with open(file_path, 'r', encoding='utf-8') as fh:
+            text = fh.read()
+    else:
+        text = text_input
+
+    if not text or not text.strip():
+        cli_app.print_error('No text provided to embed')
         sys.exit(1)
+
+    factory = get_embeddings_factory()
+    try:
+        vectors = factory.embed_texts(model, [text])
     except Exception as e:
-        cli_app.print_error(f"Download failed: {str(e)}")
-        logger.exception("Full error traceback:")
+        cli_app.print_error(f'Embedding failed: {e}')
         sys.exit(1)
+
+    vec = vectors[0]
+    cli_app.print_success(f'Generated embedding of length {len(vec)} using model {model}')
+
+    if output_path:
+        with open(output_path, 'w', encoding='utf-8') as fh:
+            json.dump({'model': model, 'embedding': vec}, fh)
+        cli_app.print_info(f'Wrote embedding to {output_path}')
+    else:
+        # print JSON to stdout
+        print(json.dumps({'model': model, 'embedding': vec}))
+    
 
 
 @pdfstract.command()

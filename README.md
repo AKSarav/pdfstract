@@ -59,6 +59,11 @@ ps=PDFStract()
 # convert and chunk in a single step with auto mode
 chunks=ps.convert_chunk("path/to/pdf", library="auto", chunker="auto")
 
+
+## Embeddings
+
+PDFStract can also generate vector embeddings from text using pluggable providers (OpenAI, Azure OpenAI, Google Generative, Ollama, Sentence-Transformers, Model2Vec). Use `PDFStract.embed_text(s)` or the convenience `embed_text(s)` functions. Hosted providers require API keys (see docs), while local providers like Sentence-Transformers and Ollama run locally.
+
 # or do it in two steps
 # convert first with your library of choice
 md_content=ps.convert("path/to/pdf", library="docling")
