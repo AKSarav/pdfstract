@@ -16,3 +16,5 @@ results/
 *chunks.json
 .env.example
 uv.lock
+test.ipynb
+notebooks/

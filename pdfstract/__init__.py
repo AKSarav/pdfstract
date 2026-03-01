@@ -28,7 +28,7 @@ Documentation:
     See services/ for implementation details
 """
 
-from .api import PDFStract, convert_pdf, list_available_libraries, chunk_text, list_available_chunkers, list_available_embeddings, embed_text, embed_texts
+from .api import PDFStract
 
 # Version is managed in pyproject.toml
 # Read it dynamically to keep a single source of truth
@@ -51,13 +51,6 @@ __license__ = "MIT"
 
 __all__ = [
     "PDFStract",
-    "convert_pdf",
-    "list_available_libraries",
-    "chunk_text",
-    "list_available_chunkers",
-    "list_available_embeddings",
-    "embed_text",
-    "embed_texts",
     "__version__",
 ]
 

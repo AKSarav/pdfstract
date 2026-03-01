@@ -183,14 +183,14 @@ print(f"Semantic chunker: {info}")
 Generate vector embeddings for text using pluggable providers.
 
 ```python
-# Embed multiple texts (synchronous)
-from pdfstract import embed_texts
-vectors = embed_texts(["First sentence.", "Second sentence."], model='auto')
+from pdfstract import PDFStract
 
-# Using the PDFStract object (async + sync)
 pdf = PDFStract()
-vecs = pdf.embed_texts(["Hello world"], model='sentence-transformers')
+# Sync
+vecs = pdf.embed_texts(["First sentence.", "Second sentence."], model='auto')
 print(len(vecs[0]))  # embedding dimension
+# Or single text
+e = pdf.embed_text("Hello world", model='sentence-transformers')
 ```
 
 Parameters:
@@ -201,39 +201,7 @@ Notes:
 - Credentials are validated internally and a clear error is raised if required environment variables are missing.
 - For hosted providers set `OPENAI_API_KEY`, `AZURE_OPENAI_KEY`, `GOOGLE_API_KEY`, etc. For Ollama, ensure a local Ollama daemon is running.
 
-## Convenience Functions
-
-PDFStract also provides standalone functions for quick operations:
-
-### PDF Conversion Functions
-
-```python
-from pdfstract import (
-    convert_with_docling,
-    convert_with_marker, 
-    convert_with_pymupdf4llm,
-    convert_with_unstructured
-)
-
-# Use specific converters directly
-text = convert_with_marker('document.pdf')
-text = convert_with_docling('document.pdf', extract_images=True)
-```
-
-### Chunking Functions
-
-```python
-from pdfstract import (
-    chunk_by_tokens,
-    chunk_semantically,
-    chunk_recursively,
-    chunk_by_sentences
-)
-
-# Use specific chunkers directly
-chunks = chunk_semantically(text, chunk_size=512)
-chunks = chunk_by_tokens(text, chunk_size=1024, overlap=100)
-```
+Use a single `PDFStract()` instance for all operations: `pdfstract.convert(...)`, `pdfstract.chunk_text(...)`, `pdfstract.embed_texts(...)`, etc. Instantiate once and reuse.
 
 ## Error Handling
 

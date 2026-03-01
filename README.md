@@ -62,7 +62,7 @@ chunks=ps.convert_chunk("path/to/pdf", library="auto", chunker="auto")
 
 ## Embeddings
 
-PDFStract can also generate vector embeddings from text using pluggable providers (OpenAI, Azure OpenAI, Google Generative, Ollama, Sentence-Transformers, Model2Vec). Use `PDFStract.embed_text(s)` or the convenience `embed_text(s)` functions. Hosted providers require API keys (see docs), while local providers like Sentence-Transformers and Ollama run locally.
+PDFStract can also generate vector embeddings from text using pluggable providers (OpenAI, Azure OpenAI, Google Generative, Ollama, Sentence-Transformers, Model2Vec). Use `pdfstract.embed_text(s)` / `pdfstract.embed_texts(...)` on a `PDFStract()` instance. Hosted providers require API keys (see docs), while local providers like Sentence-Transformers and Ollama run locally.
 
 # or do it in two steps
 # convert first with your library of choice
@@ -134,13 +134,13 @@ pdfstract download marker
 
 You don't need to use the CLI! PDFStract can be easily integrated into your Python applications as a library. 
 
-#### Convert a PDF (One-liner)
+#### Convert a PDF
 
 ```python
-from pdfstract import convert_pdf
+from pdfstract import PDFStract
 
-# Quick conversion with default settings
-result = convert_pdf('sample.pdf', library='marker')
+pdfstract = PDFStract()
+result = pdfstract.convert('sample.pdf', library='marker')
 print(result)  # Markdown content
 ```
 
@@ -150,8 +150,6 @@ print(result)  # Markdown content
 from pdfstract import PDFStract
 
 pdfstract = PDFStract()
-
-# Get list of available libraries
 available = pdfstract.list_available_libraries()
 print(available)  # ['pymupdf4llm', 'marker', 'docling', ...]
 ```

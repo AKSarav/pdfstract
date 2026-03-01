@@ -29,10 +29,10 @@ pip install pdfstract[all]
 ### Convert a PDF
 
 ```python
-from pdfstract import convert_pdf
+from pdfstract import PDFStract
 
-# One-liner conversion
-text = convert_pdf('document.pdf', library='marker')
+pdfstract = PDFStract()
+text = pdfstract.convert('document.pdf', library='marker')
 print(text)
 ```
 
@@ -141,7 +141,7 @@ pdfstract compare sample.pdf -l marker -l docling -l pymupdf4llm
 
 ## Embeddings
 
-PDFStract can generate embeddings using multiple providers (OpenAI, Azure OpenAI, Google Generative, Ollama, Sentence-Transformers, Model2Vec). Use the Python API `embed_text` / `embed_texts` or the CLI `pdfstract embeddings-list` and `pdfstract embed-text` commands. Hosted providers require API keys; local providers require installed models or running services.
+PDFStract can generate embeddings using multiple providers (OpenAI, Azure OpenAI, Google Generative, Ollama, Sentence-Transformers, Model2Vec). Use a `PDFStract()` instance and call `embed_text` / `embed_texts`, or use the CLI `pdfstract embeddings-list` and `pdfstract embed-text` commands. Hosted providers require API keys; local providers require installed models or running services.
 
 ## Web UI & Docker
 

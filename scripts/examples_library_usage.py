@@ -8,7 +8,7 @@ without needing the CLI.
 import asyncio
 from pathlib import Path
 import os
-from pdfstract import PDFStract, convert_pdf, list_available_libraries
+from pdfstract import PDFStract
 
 
 def example_basic_conversion():
@@ -34,16 +34,16 @@ def example_basic_conversion():
 
 
 def example_quick_conversion():
-    """Example 2: Quick one-liner conversion"""
+    """Example 2: Quick conversion via PDFStract instance"""
     print("=" * 60)
-    print("Example 2: Quick One-liner Conversion")
+    print("Example 2: Quick Conversion")
     print("=" * 60)
     
     pdf_path = os.path.join(os.getcwd(), "tests/samples/sample1.pdf")  # Replace with your PDF path
     if Path(pdf_path).exists():
-        # Using the convenience function
-        result = convert_pdf(pdf_path, library="pymupdf4llm")
-        print(f"✓ Quick converted with one-liner")
+        pdfstract = PDFStract()
+        result = pdfstract.convert(pdf_path, library="pymupdf4llm")
+        print(f"✓ Converted with pdfstract.convert()")
         print(f"Content length: {len(result)} chars\n")
     else:
         print(f"(Skipping - {pdf_path} not found)\n")

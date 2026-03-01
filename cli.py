@@ -4,6 +4,17 @@ PDFStract CLI - Command-line interface for PDF extraction and conversion
 Provides: single conversions, multi-library comparisons, batch processing
 """
 
+# Suppress noisy warnings from third-party libraries during CLI runs
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message=".*urllib3.*or chardet.*doesn't match a supported version.*",
+    module="requests",
+)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+
 import click
 import json
 import os
@@ -12,7 +23,6 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
-import csv
 import sys
 
 from rich.console import Console
@@ -24,7 +34,7 @@ from rich.syntax import Syntax
 from services.cli_factory import CLILazyFactory
 from services.base import OutputFormat
 from services.logger import logger
-from services.chunker_factory import get_chunker_factory
+# get_chunker_factory imported lazily inside chunk/convert-chunk/chunkers to avoid loading chonkie on every CLI run
 
 # Import version for --version option (reads from api module which reads from pyproject.toml)
 try:
@@ -789,6 +799,7 @@ def batch_compare(input_dir: Path, libraries: tuple, format: str, output: str, m
 @pdfstract.command()
 def chunkers():
     """List all available text chunkers and their parameters"""
+    from services.chunker_factory import get_chunker_factory
     cli_app.print_banner()
     
     factory = get_chunker_factory()
@@ -880,6 +891,7 @@ def chunk(input_file: Path, chunker: str, chunk_size: int, chunk_overlap: int, o
     cli_app.print_info(f"Chunker: {chunker} | Size: {chunk_size} | Overlap: {chunk_overlap}")
     
     try:
+        from services.chunker_factory import get_chunker_factory
         factory = get_chunker_factory()
         
         with Progress(
@@ -1042,6 +1054,7 @@ def convert_chunk(
             # Step 2: Chunk the converted text
             progress.add_task("Chunking text...", total=None)
             
+            from services.chunker_factory import get_chunker_factory
             factory = get_chunker_factory()
             result = asyncio.run(
                 factory.chunk_with_result(chunker, converted_text, **chunker_params)

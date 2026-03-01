@@ -2,7 +2,7 @@ from typing import Dict, Optional, List
 import importlib
 import asyncio
 from services.embeddings_wrappers.base import BaseEmbeddingsWrapper
-
+from services.logger import logger
 
 class EmbeddingsFactory:
     def __init__(self):
@@ -42,9 +42,11 @@ class EmbeddingsFactory:
     def get_embedding(self, name: str) -> Optional[BaseEmbeddingsWrapper]:
         if name == "auto":
             default = self.get_default_embedding()
+            logger.info(f"Selected default embedding: {default}")
             if default:
                 return self._load_provider(default)
             return None
+        logger.info(f"Selected embedding: {name}")
         return self._load_provider(name)
 
     def list_available_embeddings(self) -> List[str]:

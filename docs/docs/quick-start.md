@@ -87,14 +87,12 @@ Set `chunker='auto'` to automatically select the best available method (typicall
 PDFStract can produce vector embeddings using multiple providers. Embeddings are useful for indexing, semantic search, and RAG pipelines.
 
 ```python
-# Embed a list of texts using auto-selected provider
-from pdfstract import embed_texts
-vecs = embed_texts(["First sentence", "Second sentence"], model='auto')
-print(len(vecs[0]))
+from pdfstract import PDFStract
 
-# Embed a single text
-from pdfstract import embed_text
-e = embed_text("Hello world", model='sentence-transformers')
+pdf = PDFStract()
+vecs = pdf.embed_texts(["First sentence", "Second sentence"], model='auto')
+print(len(vecs[0]))
+e = pdf.embed_text("Hello world", model='sentence-transformers')
 ```
 
 Notes:

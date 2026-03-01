@@ -9,10 +9,6 @@ Examples:
     >>> pdfstract = PDFStract()
     >>> result = pdfstract.convert('sample.pdf', 'marker')
     
-    >>> # Quick conversion
-    >>> from pdfstract import convert_pdf
-    >>> result = convert_pdf('sample.pdf', library='marker')
-    
     >>> # Batch processing
     >>> results = pdfstract.batch_convert('./pdfs', 'marker')
     >>> print(f"Converted {results['success']} files")
@@ -520,7 +516,6 @@ class PDFStract:
             List of vectors (one per input text)
         """
         from services.embeddings_factory import get_embeddings_factory
-
         factory = get_embeddings_factory()
         return await factory.embed_texts_async(model, texts)
 
@@ -546,107 +541,57 @@ class PDFStract:
         factory = get_embeddings_factory()
         return factory.list_available_embeddings()
 
-# ============================================================================
-# Convenience functions for quick usage
-# ============================================================================
+    def convert_chunk_embed(
+        self,
+        pdf_path: Union[str, Path],
+        library: str = "auto",
+        chunker: str = "auto",
+        embedding: str = "auto",
+        output_format: str = "markdown",
+        chunker_params: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Synchronous wrapper for convert_chunk_embed_async."""
+        import asyncio
+        return asyncio.run(self.convert_chunk_embed_async(pdf_path, library, chunker, embedding, output_format, chunker_params ))
 
-def convert_pdf(
-    pdf_path: Union[str, Path],
-    library: str = "pymupdf4llm",
-    output_format: str = "markdown"
-) -> Union[str, Dict]:
-    """Quick PDF conversion function
-    
-    One-liner convenience function for simple conversions.
-    
-    Args:
-        pdf_path: Path to PDF file
-        library: Extraction library (default: 'pymupdf4llm')
-        output_format: Output format (default: 'markdown')
-    
-    Returns:
-        Extracted content
-    
-    Example:
-        >>> from pdfstract import convert_pdf
-        >>> result = convert_pdf('sample.pdf', 'marker')
-        >>> print(result)
-    """
-    pdfstract = PDFStract()
-    return pdfstract.convert(pdf_path, library, output_format)
-
-
-def list_available_libraries() -> list[str]:
-    """Quick function to list available libraries
-    
-    Example:
-        >>> from pdfstract import list_available_libraries
-        >>> print(list_available_libraries())
-    """
-    pdfstract = PDFStract()
-    return pdfstract.list_available_libraries()
-
-
-def chunk_text(
-    text: str,
-    chunker: str = "token",
-    **kwargs
-) -> Dict[str, Any]:
-    """Quick text chunking function
-    
-    One-liner convenience function for simple chunking operations.
-    
-    Args:
-        text: Text to chunk
-        chunker: Chunker to use (default: 'token')
-        **kwargs: Chunker-specific parameters
-    
-    Returns:
-        Chunking result dict
-    
-    Example:
-        >>> from pdfstract import chunk_text
-        >>> result = chunk_text("Long text...", chunker="semantic", chunk_size=512)
-        >>> print(f"Created {result['total_chunks']} chunks")
-    """
-    pdfstract = PDFStract()
-    return pdfstract.chunk_text(text, chunker, **kwargs)
-
-
-def list_available_chunkers() -> List[str]:
-    """Quick function to list available chunkers
-    
-    Example:
-        >>> from pdfstract import list_available_chunkers
-        >>> print(list_available_chunkers())
-    """
-    pdfstract = PDFStract()
-    return pdfstract.list_available_chunkers()
-
-
-def list_available_embeddings() -> List[str]:
-    """Quick function to list available embedding providers
-
-    Example:
-        >>> from pdfstract import list_available_embeddings
-        >>> print(list_available_embeddings())
-    """
-    pdfstract = PDFStract()
-    return pdfstract.list_available_embeddings()
-
-
-def embed_texts(texts: List[str], model: str = "auto") -> List[List[float]]:
-    """Quick convenience function to embed multiple texts.
-
-    Args:
-        texts: List of strings to embed
-        model: Embedding provider name or 'auto'
-    """
-    pdfstract = PDFStract()
-    return pdfstract.embed_texts(texts, model)
-
-
-def embed_text(text: str, model: str = "auto") -> List[float]:
-    """Quick convenience function to embed a single text."""
-    pdfstract = PDFStract()
-    return pdfstract.embed_text(text, model)
+    # async pipeline function that combines conversion, chunking, and embedding in one step
+    async def convert_chunk_embed_async(
+        self,
+        pdf_path: Union[str, Path],
+        library: str = "auto",
+        chunker: str = "auto",
+        embedding: str = "auto",
+        output_format: str = "markdown",
+        chunker_params: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Pipeline function that combines PDF conversion, text chunking, and embedding in one step (asynchronous)
+        
+        Args:
+            pdf_path: Path to PDF file
+            library: Extraction library to use
+            chunker: Chunker to use for chunking extracted text
+            output_format: Output format for extraction (default: 'markdown')
+            chunker_params: Optional dict of parameters to pass to the chunker
+            embedding: Embedding provider name or 'auto' to embed chunks after extraction and chunking
+        
+        Returns:
+            Dict with 'extracted_content', 'chunking_result', and optionally 'embeddings'
+        """
+        extracted_content = await self.convert_async(pdf_path, library, output_format)
+        chunking_result = await self.chunk_text_async(
+            text=extracted_content if isinstance(extracted_content, str) else str(extracted_content),
+            chunker=chunker,
+            **(chunker_params or {})
+        )
+        embeddings = None
+        if embedding and chunking_result["chunks"]:
+            chunk_texts = [chunk["text"] for chunk in chunking_result["chunks"]]
+            embeddings = await self.embed_texts_async(chunk_texts, model=embedding)
+            for i, chunk in enumerate(chunking_result["chunks"]):
+                chunk["embedding"] = embeddings[i]
+        
+        return {
+            "extracted_content": extracted_content,
+            "chunking_result": chunking_result,
+            "embeddings": embeddings
+        }
