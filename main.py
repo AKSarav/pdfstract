@@ -1,4 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
+from typing import List, Dict, Union, Optional
+
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +20,8 @@ from services.db_service import DatabaseService
 from services.queue_manager import QueueManager
 from services.results_manager import ResultsManager
 from services.chunker_factory import get_chunker_factory
+from services.embeddings_factory import get_embeddings_factory
+
 
 app = FastAPI(title="PDFStract - Unified PDF extraction wrapper", description="Convert PDF files to Markdown using various libraries")
 
@@ -50,7 +54,9 @@ app.add_middleware(
 # Serve static files if they exist (built React app)
 static_dir = Path("static")
 if static_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
     app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # Ensure upload directory exists
 UPLOAD_DIR = "uploads"
@@ -69,6 +75,8 @@ def get_factory():
 db_service = DatabaseService()
 queue_manager = QueueManager(db_service)
 results_manager = ResultsManager()
+embeddings_factory = get_embeddings_factory()
+
 
 @app.get("/")
 async def read_root():
@@ -602,6 +610,55 @@ async def convert_and_chunk(
 # ============================================================================
 # END CHUNKING ENDPOINTS
 # ============================================================================
+
+
+# ============================================================================
+# EMBEDDINGS ENDPOINTS
+# ============================================================================
+
+@app.get("/embeddings/providers")
+async def get_embedding_providers():
+    """List available embedding providers and their status"""
+    try:
+        factory = get_embeddings_factory()
+        providers = factory.list_all_providers()
+        return {"providers": providers}
+    except Exception as e:
+
+        logger.error(f"Error listing embedding providers: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+from pydantic import BaseModel
+
+class EmbedRequest(BaseModel):
+    texts: List[str]
+    model: str = "auto"
+
+@app.post("/embeddings/embed")
+async def generate_embeddings(request: EmbedRequest):
+    """
+    Generate embeddings for a list of texts.
+    """
+    try:
+        factory = get_embeddings_factory()
+        embeddings = await factory.embed_texts_async(request.model, request.texts)
+        return {
+            "success": True,
+            "model_used": request.model,
+            "embeddings": embeddings,
+            "count": len(embeddings)
+        }
+    except ValueError as e:
+
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Embedding generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# END EMBEDDINGS ENDPOINTS
+# ============================================================================
+
 
 
 @app.delete("/compare/{task_id}")

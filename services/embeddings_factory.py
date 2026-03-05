@@ -65,6 +65,23 @@ class EmbeddingsFactory:
                 return name
         return None
 
+    def list_all_providers(self) -> List[Dict]:
+        """List all providers with their availability and configuration status"""
+        result = []
+        for name in self._provider_classes.keys():
+            inst = self._load_provider(name)
+            available = inst.available if inst else False
+            ok, msg = inst.validate_credentials() if inst else (False, "Provider could not be loaded")
+            
+            result.append({
+                "name": name,
+                "available": available,
+                "configured": ok,
+                "message": msg
+            })
+        return result
+
+
     async def embed_texts_async(self, model: str, texts: List[str]) -> List[List[float]]:
         provider = self.get_embedding(model)
         if not provider:
