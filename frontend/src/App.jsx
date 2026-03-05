@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { FileText, Upload, Loader2, Download, CheckCircle2, XCircle, FileDown, Github, Clock, Repeat2, Scissors, DownloadCloud } from 'lucide-react'
+import { FileText, Upload, Loader2, Download, CheckCircle2, XCircle, FileDown, Github, Clock, Repeat2, Scissors, DownloadCloud, Database } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
 import { Select } from './components/ui/select'
@@ -11,6 +11,8 @@ import { RecentComparisons } from './components/RecentComparisons'
 import { ComparisonResults } from './components/ComparisonResults'
 import { ChunkerSelect } from './components/ChunkerSelect'
 import { ChunkResults } from './components/ChunkResults'
+import { EmbeddingsPanel } from './components/EmbeddingsPanel'
+
 
 function App() {
   const [libraries, setLibraries] = useState([])
@@ -948,6 +950,12 @@ function App() {
                             <TabsTrigger value="preview" className="flex-1 text-xs">
                               Preview
                             </TabsTrigger>
+                            {chunkingResult?.chunking?.chunks && (
+                              <TabsTrigger value="embeddings" className="flex-1 text-xs text-blue-600 dark:text-blue-400 font-semibold gap-1.5">
+                                <Database className="w-3 h-3" />
+                                Embeddings
+                              </TabsTrigger>
+                            )}
                           </TabsList>
                         </div>
                         <TabsContent value="source" className="flex-1 overflow-auto p-4 m-0">
@@ -963,6 +971,16 @@ function App() {
                             )}
                           />
                         </TabsContent>
+                        {chunkingResult?.chunking?.chunks && (
+                          <TabsContent value="embeddings" className="flex-1 overflow-auto p-4 m-0">
+                            <div className="max-w-2xl mx-auto py-2">
+                              <EmbeddingsPanel
+                                chunks={chunkingResult.chunking.chunks}
+                                isLoading={isLoading}
+                              />
+                            </div>
+                          </TabsContent>
+                        )}
                       </Tabs>
                     )}
                   </div>

@@ -445,6 +445,67 @@ class PDFStract:
         all_libs = self.list_libraries()
         return next((lib for lib in all_libs if lib["name"] == library), None)
 
+    # ===== EMBEDDINGS API =====
+
+    def embed(
+        self,
+        texts: Union[str, List[str]],
+        model: str = "auto"
+    ) -> List[List[float]]:
+        """Generate embeddings for text(s) (synchronous)
+        
+        Args:
+            texts: A single string or a list of strings to embed
+            model: Name of the embedding model/provider to use
+                  (e.g., 'openai', 'ollama', 'sentence-transformers')
+                  Default: 'auto' (picks first available)
+        
+        Returns:
+            List of embedding vectors (each is a list of floats)
+        
+        Example:
+            >>> pdfstract = PDFStract()
+            >>> vectors = pdfstract.embed(["Hello world", "PDFStract is great"])
+            >>> print(len(vectors[0]))  # e.g., 1536 for OpenAI
+        """
+        import asyncio
+        return asyncio.run(self.embed_async(texts, model))
+
+    async def embed_async(
+        self,
+        texts: Union[str, List[str]],
+        model: str = "auto"
+    ) -> List[List[float]]:
+        """Generate embeddings for text(s) asynchronously
+        
+        Args:
+            texts: A single string or a list of strings to embed
+            model: Name of the embedding model/provider to use
+        
+        Returns:
+            List of embedding vectors
+        """
+        from services.embeddings_factory import get_embeddings_factory
+        
+        if isinstance(texts, str):
+            texts = [texts]
+            
+        if not texts:
+            return []
+            
+        factory = get_embeddings_factory()
+        return await factory.embed_texts_async(model, texts)
+
+    def list_available_embeddings(self) -> List[str]:
+        """List names of available embedding providers
+        
+        Returns:
+            List of provider names
+        """
+        from services.embeddings_factory import get_embeddings_factory
+        return get_embeddings_factory().list_available_embeddings()
+
+
     async def convert_chunk_async(
         self,
         pdf_path: Union[str, Path],
