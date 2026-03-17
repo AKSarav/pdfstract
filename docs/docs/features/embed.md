@@ -175,7 +175,7 @@ pdfstract convert-chunk-embed document.pdf \
 ### List Available Providers
 
 ```bash
-pdfstract embeddings
+pdfstract embeddings-list
 ```
 
 ## Provider Details
