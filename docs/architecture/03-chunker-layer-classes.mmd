@@ -1,0 +1,170 @@
+%% PDFStract Chunker Layer - Class Diagram (C4 Level 4)
+%% Shows BaseChunker abstract base, Chunk/ChunkingResult dataclasses,
+%% 10 concrete chunker implementations, and ChunkerFactory
+
+classDiagram
+    class Chunk {
+        +text: str
+        +start_index: int
+        +end_index: int
+        +token_count: int
+        +metadata: Dict~str, Any~
+        +to_dict() Dict
+        +__len__() int
+    }
+
+    class ChunkingResult {
+        +chunks: List~Chunk~
+        +chunker_name: str
+        +parameters: Dict~str, Any~
+        +total_chunks: int
+        +total_tokens: int
+        +original_length: int
+        +to_dict() Dict
+    }
+
+    class ChunkerType {
+        <<Enumeration>>
+        TOKEN = "token"
+        FAST = "fast"
+        SENTENCE = "sentence"
+        RECURSIVE = "recursive"
+        SEMANTIC = "semantic"
+        CODE = "code"
+        TABLE = "table"
+        LATE = "late"
+        NEURAL = "neural"
+        SLUMBER = "slumber"
+    }
+
+    class BaseChunker {
+        <<Abstract>>
+        #name: str*
+        #available: bool*
+        #parameters_schema: Dict*
+        #error_message: Optional~str~
+        #description: str
+        +chunk(text, **params)* List~Chunk~
+        +chunk_with_result(text, **params) ChunkingResult
+        +validate_params(params) Dict
+        +get_info() Dict
+    }
+
+    class TokenChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "token"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, tokenizer, chunk_size, chunk_overlap) List~Chunk~
+    }
+
+    class SentenceChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "sentence"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, tokenizer, chunk_size, chunk_overlap, min_sentences) List~Chunk~
+    }
+
+    class RecursiveChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "recursive"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, tokenizer, chunk_size, recipe) List~Chunk~
+    }
+
+    class SemanticChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "semantic"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, embedding_model, chunk_size, threshold) List~Chunk~
+    }
+
+    class CodeChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "code"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, language, tokenizer, chunk_size) List~Chunk~
+    }
+
+    class TableChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "table"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, tokenizer, chunk_size) List~Chunk~
+    }
+
+    class LateChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "late"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, embedding_model, chunk_size) List~Chunk~
+    }
+
+    class NeuralChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "neural"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, model, device_map, stride) List~Chunk~
+    }
+
+    class FastChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "fast"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, chunk_size, delimiters, pattern) List~Chunk~
+    }
+
+    class SlumberChunkerWrapper {
+        -_chunker_cache: Dict
+        +name: "slumber"
+        +available: bool
+        +parameters_schema: Dict
+        +chunk(text, genie_provider, tokenizer, chunk_size) List~Chunk~
+    }
+
+    class ChunkerFactory {
+        -_chunkers: Dict~str, BaseChunker~
+        +get_chunker(name) BaseChunker
+        +get_default_chunker() BaseChunker
+        +list_available_chunkers() List~str~
+        +list_all_chunkers() List~Dict~
+        +chunk(chunker_name, text, **params)* List~Chunk~
+        +chunk_with_result(chunker_name, text, **params)* ChunkingResult
+        +get_chunker_schema(chunker_name) Dict
+    }
+
+    %% Module-level function
+    class get_chunker_factory {
+        <<Function>>
+        -_factory: Optional~ChunkerFactory~
+        +get_chunker_factory()$ ChunkerFactory
+    }
+
+    %% Relationships
+    BaseChunker --> Chunk : "produces"
+    BaseChunker --> ChunkingResult : "produces"
+    BaseChunker --> ChunkerType : "uses"
+
+    BaseChunker <|-- TokenChunkerWrapper
+    BaseChunker <|-- SentenceChunkerWrapper
+    BaseChunker <|-- RecursiveChunkerWrapper
+    BaseChunker <|-- SemanticChunkerWrapper
+    BaseChunker <|-- CodeChunkerWrapper
+    BaseChunker <|-- TableChunkerWrapper
+    BaseChunker <|-- LateChunkerWrapper
+    BaseChunker <|-- NeuralChunkerWrapper
+    BaseChunker <|-- FastChunkerWrapper
+    BaseChunker <|-- SlumberChunkerWrapper
+
+    ChunkerFactory --> BaseChunker : "manages 10 implementations"
+    ChunkerFactory --> Chunk : "returns"
+    ChunkerFactory --> ChunkingResult : "returns"
+    get_chunker_factory --> ChunkerFactory : "returns singleton"

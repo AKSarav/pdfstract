@@ -4,6 +4,17 @@ PDFStract CLI - Command-line interface for PDF extraction and conversion
 Provides: single conversions, multi-library comparisons, batch processing
 """
 
+# Suppress noisy warnings from third-party libraries during CLI runs
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message=".*urllib3.*or chardet.*doesn't match a supported version.*",
+    module="requests",
+)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+
 import click
 import json
 import os
@@ -12,7 +23,6 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
-import csv
 import sys
 
 from rich.console import Console
@@ -21,50 +31,37 @@ from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.panel import Panel
 from rich.syntax import Syntax
 
-from services.cli_factory import CLILazyFactory
 from services.base import OutputFormat
 from services.logger import logger
-from services.chunker_factory import get_chunker_factory
 
 # Import version for --version option (reads from api module which reads from pyproject.toml)
 try:
-    from api import __version__
+    import importlib.metadata
+    __version__ = importlib.metadata.version("pdfstract")
 except ImportError:
-    __version__ = "1.1.0"  # Fallback version
+    __version__ = ""  # Fallback version
 
 # Rich console for beautiful output
 console = Console()
 
-# Factory (lazy initialized - uses lightweight CLILazyFactory)
-_factory = None
+# PDFStract API instance (lazy - backs CLI so features are implemented once)
+_pdfstract = None
 
-def get_factory():
-    """Get factory instance (lazy initialization to speed up CLI startup)"""
-    global _factory
-    if _factory is None:
-        _factory = CLILazyFactory()
-    return _factory
+def get_pdfstract():
+    """Get PDFStract instance (lazy initialization to speed up CLI startup)"""
+    global _pdfstract
+    if _pdfstract is None:
+        from pdfstract import PDFStract
+        _pdfstract = PDFStract()
+    return _pdfstract
 
 
 class PDFStractCLI:
-    """Main CLI class handling all operations"""
+    """Main CLI class handling all operations (display helpers; backend is PDFStract)"""
     
     def __init__(self, lazy=True):
         self.console = console
         self._lazy = lazy
-        self._factory = None
-    
-    @property
-    def factory(self):
-        """Get factory with lazy loading"""
-        if self._factory is None:
-            if not self._lazy:
-                # Eager load for help/libs commands
-                self._factory = get_factory()
-            else:
-                # For action commands, factory is initialized on first use
-                self._factory = get_factory()
-        return self._factory
     
     def print_banner(self):
         """Print CLI banner"""
@@ -92,9 +89,9 @@ class PDFStractCLI:
         """Print info message"""
         self.console.print(f"[bold blue]ℹ[/bold blue] {msg}")
     
-    def get_available_libraries(self) -> Dict:
+    def get_available_libraries(self) -> List[Dict]:
         """Get all available libraries and their status"""
-        return self.factory.list_all_converters()
+        return get_pdfstract().list_libraries()
     
     def get_available_formats(self) -> List[str]:
         """Get available output formats"""
@@ -127,8 +124,7 @@ def libs():
     """List all available extraction libraries and their status"""
     cli_app.print_banner()
     
-    # Initialize factory ONLY when listing libraries
-    libraries = get_factory().list_all_converters()
+    libraries = get_pdfstract().list_libraries()
     
     table = Table(title="Available PDF Extraction Libraries", show_lines=True)
     table.add_column("Library", style="cyan", no_wrap=True)
@@ -180,11 +176,10 @@ def download(library_name: str, download_all: bool):
     """
     cli_app.print_banner()
     
-    factory = get_factory()
+    ps = get_pdfstract()
     
     if download_all or library_name == 'all':
-        # Download all libraries that require downloads
-        libraries = factory.list_all_converters()
+        libraries = ps.list_libraries()
         to_download = [lib["name"] for lib in libraries if lib.get("requires_download") and lib["available"]]
         
         if not to_download:
@@ -202,7 +197,7 @@ def download(library_name: str, download_all: bool):
                     console=console
                 ) as progress:
                     task = progress.add_task(f"Downloading {lib_name} models...", total=None)
-                    result = asyncio.run(factory.prepare_converter(lib_name))
+                    result = ps.prepare_converter(lib_name)
                     progress.stop()
                 
                 if result["success"]:
@@ -214,51 +209,101 @@ def download(library_name: str, download_all: bool):
         
         return
     
-    # Download single library
-    status = factory.get_converter_status(library_name)
-    if not status:
-        cli_app.print_error(f"Library '{library_name}' not found")
-        cli_app.print_info(f"Available libraries: {', '.join(factory.list_available_converters())}")
-        sys.exit(1)
-    
-    if not status.get("available"):
-        cli_app.print_error(f"Library '{library_name}' is not installed. Install the Python package first.")
-        sys.exit(1)
-    
-    if not status.get("requires_download"):
-        cli_app.print_info(f"Library '{library_name}' does not require model downloads")
-        return
-    
-    if status.get("download_status") == "ready":
-        cli_app.print_success(f"Library '{library_name}' models are already downloaded")
-        return
-    
-    cli_app.print_info(f"Downloading models for {library_name}...")
-    cli_app.print_info("This may take several minutes depending on your internet connection")
-    
+    # Single library download
     try:
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console
         ) as progress:
-            task = progress.add_task(f"Downloading {library_name} models...", total=None)
-            result = asyncio.run(factory.prepare_converter(library_name))
-            progress.stop()
-        
+            progress.add_task(f"Downloading {library_name} models...", total=None)
+            result = ps.prepare_converter(library_name)
         if result["success"]:
-            cli_app.print_success(result.get("message", f"Models for {library_name} downloaded successfully"))
+            cli_app.print_success(result.get("message", "Downloaded successfully"))
         else:
             cli_app.print_error(result.get("error", "Download failed"))
             sys.exit(1)
-            
-    except KeyboardInterrupt:
-        cli_app.print_warning("Download interrupted")
-        sys.exit(1)
     except Exception as e:
-        cli_app.print_error(f"Download failed: {str(e)}")
-        logger.exception("Full error traceback:")
+        cli_app.print_error(str(e))
         sys.exit(1)
+
+
+@pdfstract.command()
+def embeddings_list():
+    """List embedding providers and their status"""
+    cli_app.print_banner()
+    from services.embeddings_factory import get_embeddings_factory
+
+    factory = get_embeddings_factory()
+    table = Table(title="Embedding Providers", show_lines=True)
+    table.add_column("Provider", style="cyan")
+    table.add_column("Installed", style="green")
+    table.add_column("Available", style="green")
+    table.add_column("Credentials", style="yellow")
+    table.add_column("Notes", style="magenta")
+
+    for name in factory._provider_classes.keys():
+        inst = factory._load_provider(name)
+        installed = "Yes" if inst is not None else "No"
+        available = "Yes" if (inst and inst.available) else "No"
+        creds = "N/A"
+        notes = ""
+        if inst is None:
+            notes = "Provider module not installed"
+        else:
+            try:
+                ok, msg = inst.validate_credentials()
+                creds = "OK" if ok else "Missing"
+                if msg:
+                    notes = msg
+            except Exception as e:
+                creds = "Error"
+                notes = str(e)
+
+        table.add_row(name, installed, available, creds, notes)
+
+    console.print(table)
+
+
+@pdfstract.command()
+@click.option('--file', '-f', 'file_path', type=click.Path(exists=True), help='Path to file to embed (reads whole file)')
+@click.option('--text', '-t', 'text_input', type=str, help='Text to embed')
+@click.option('--model', '-m', default='auto', help="Embedding provider/model to use (or 'auto')")
+@click.option('--output', '-o', 'output_path', type=click.Path(), help='Output JSON file to write embeddings')
+def embed_text(file_path: Optional[str], text_input: Optional[str], model: str, output_path: Optional[str]):
+    """Embed a single text or file using an embedding provider"""
+    cli_app.print_banner()
+    import json
+
+    if not file_path and not text_input:
+        # read from stdin
+        cli_app.print_info('Reading text from stdin (end with EOF)')
+        text = sys.stdin.read()
+    elif file_path:
+        with open(file_path, 'r', encoding='utf-8') as fh:
+            text = fh.read()
+    else:
+        text = text_input
+
+    if not text or not text.strip():
+        cli_app.print_error('No text provided to embed')
+        sys.exit(1)
+
+    try:
+        vec = get_pdfstract().embed_text(text, model)
+    except Exception as e:
+        cli_app.print_error(f'Embedding failed: {e}')
+        sys.exit(1)
+    cli_app.print_success(f'Generated embedding of length {len(vec)} using model {model}')
+
+    if output_path:
+        with open(output_path, 'w', encoding='utf-8') as fh:
+            json.dump({'model': model, 'embedding': vec}, fh)
+        cli_app.print_info(f'Wrote embedding to {output_path}')
+    else:
+        # print JSON to stdout
+        print(json.dumps({'model': model, 'embedding': vec}))
+    
 
 
 @pdfstract.command()
@@ -287,10 +332,9 @@ def convert(input_file: Path, library: str, format: str, output: Optional[str]):
         cli_app.print_error("Only PDF files are supported")
         sys.exit(1)
     
-    # Get converter (lazy load factory only when needed)
-    converter = get_factory().get_converter(library)
-    if not converter:
-        available = [lib["name"] for lib in cli_app.get_available_libraries() if lib["available"]]
+    ps = get_pdfstract()
+    available = ps.list_available_libraries()
+    if library not in available:
         cli_app.print_error(f"Library '{library}' not available")
         cli_app.print_info(f"Available: {', '.join(available)}")
         sys.exit(1)
@@ -306,13 +350,7 @@ def convert(input_file: Path, library: str, format: str, output: Optional[str]):
         ) as progress:
             task = progress.add_task("Converting...", total=None)
             
-            # Run conversion
-            output_format = OutputFormat(format)
-            result = get_factory().convert(
-                converter_name=library,
-                file_path=str(input_file),
-                output_format=output_format
-            )
+            result = ps.convert(input_file, library, format)
             
             progress.stop()
         
@@ -375,8 +413,8 @@ def compare(input_file: Path, libraries: tuple, format: str, output: str):
         cli_app.print_warning(f"Limiting to 5 libraries (you specified {len(libraries)})")
         libraries = libraries[:5]
     
-    # Validate libraries
-    available_libs = get_factory().list_available_converters()
+    ps = get_pdfstract()
+    available_libs = ps.list_available_libraries()
     for lib in libraries:
         if lib not in available_libs:
             cli_app.print_error(f"Library '{lib}' not available")
@@ -390,7 +428,6 @@ def compare(input_file: Path, libraries: tuple, format: str, output: str):
     cli_app.print_info(f"Format: {format}")
     
     results = {}
-    output_format = OutputFormat(format)
     
     with Progress(
         SpinnerColumn(),
@@ -404,11 +441,7 @@ def compare(input_file: Path, libraries: tuple, format: str, output: str):
             progress.update(task, description=f"Processing {lib}...")
             
             try:
-                result = get_factory().convert(
-                    converter_name=lib,
-                    file_path=str(input_file),
-                    output_format=output_format
-                )
+                result = ps.convert(input_file, lib, format)
                 
                 # Save result
                 ext = 'json' if format == 'json' else 'md' if format == 'markdown' else 'txt'
@@ -500,10 +533,9 @@ def batch(input_dir: Path, library: str, format: str, output: str, parallel: int
     cli_app.print_info(f"Found {len(pdf_files)} PDF files to convert")
     cli_app.print_info(f"Library: {library} | Format: {format} | Workers: {parallel}")
     
-    # Validate library
-    converter = cli_app.factory.get_converter(library)
-    if not converter:
-        available = [lib["name"] for lib in cli_app.get_available_libraries() if lib["available"]]
+    ps = get_pdfstract()
+    available = ps.list_available_libraries()
+    if library not in available:
         cli_app.print_error(f"Library '{library}' not available")
         cli_app.print_info(f"Available: {', '.join(available)}")
         sys.exit(1)
@@ -519,16 +551,10 @@ def batch(input_dir: Path, library: str, format: str, output: str, parallel: int
         "files": {}
     }
     
-    output_format = OutputFormat(format)
-    
     def convert_single_pdf(pdf_file: Path) -> tuple:
         """Convert a single PDF - for parallel execution"""
         try:
-            result = get_factory().convert(
-                converter_name=library,
-                file_path=str(pdf_file),
-                output_format=output_format
-            )
+            result = ps.convert(pdf_file, library, format)
             
             # Save result
             ext = 'json' if format == 'json' else 'md' if format == 'markdown' else 'txt'
@@ -653,8 +679,8 @@ def batch_compare(input_dir: Path, libraries: tuple, format: str, output: str, m
     cli_app.print_info(f"Found {len(pdf_files)} PDF files")
     cli_app.print_info(f"Libraries: {', '.join(libraries)}")
     
-    # Validate libraries
-    available_libs = get_factory().list_available_converters()
+    ps = get_pdfstract()
+    available_libs = ps.list_available_libraries()
     for lib in libraries:
         if lib not in available_libs:
             cli_app.print_error(f"Library '{lib}' not available")
@@ -663,7 +689,6 @@ def batch_compare(input_dir: Path, libraries: tuple, format: str, output: str, m
     output_dir = Path(output)
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    output_format = OutputFormat(format)
     comparison_results = {}
     
     with Progress(
@@ -680,11 +705,7 @@ def batch_compare(input_dir: Path, libraries: tuple, format: str, output: str, m
             
             for lib in libraries:
                 try:
-                    result = get_factory().convert(
-                        converter_name=lib,
-                        file_path=str(pdf_file),
-                        output_format=output_format
-                    )
+                    result = ps.convert(pdf_file, lib, format)
                     
                     file_results[lib] = {
                         "status": "success",
@@ -754,8 +775,7 @@ def chunkers():
     """List all available text chunkers and their parameters"""
     cli_app.print_banner()
     
-    factory = get_chunker_factory()
-    all_chunkers = factory.list_all_chunkers()
+    all_chunkers = get_pdfstract().list_chunkers()
     
     table = Table(title="Available Text Chunkers", show_lines=True)
     table.add_column("Chunker", style="cyan", no_wrap=True)
@@ -843,23 +863,21 @@ def chunk(input_file: Path, chunker: str, chunk_size: int, chunk_overlap: int, o
     cli_app.print_info(f"Chunker: {chunker} | Size: {chunk_size} | Overlap: {chunk_overlap}")
     
     try:
-        factory = get_chunker_factory()
-        
+        ps = get_pdfstract()
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console
         ) as progress:
-            task = progress.add_task("Chunking...", total=None)
-            
-            # Run chunking (synchronously for CLI)
-            result = asyncio.run(
-                factory.chunk_with_result(chunker, text, **chunker_params)
-            )
-            
+            progress.add_task("Chunking...", total=None)
+            result = ps.chunk_text(text, chunker=chunker, **chunker_params)
             progress.stop()
         
-        cli_app.print_success(f"Chunking completed: {result.total_chunks} chunks created")
+        total_chunks = result["total_chunks"]
+        total_tokens = result.get("total_tokens", 0)
+        original_length = result.get("original_length", len(text))
+        
+        cli_app.print_success(f"Chunking completed: {total_chunks} chunks created")
         
         # Handle output
         if output:
@@ -867,23 +885,19 @@ def chunk(input_file: Path, chunker: str, chunk_size: int, chunk_overlap: int, o
         else:
             output_path = Path(input_file.stem + '_chunks.json')
         
-        # Save to file
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(result.to_dict(), f, indent=2, ensure_ascii=False)
+            json.dump(result, f, indent=2, ensure_ascii=False)
         
         cli_app.print_success(f"Output saved to: {output_path.absolute()}")
         
-        # Print summary table
         table = Table(title="Chunking Summary", show_lines=True)
         table.add_column("Metric", style="cyan")
         table.add_column("Value", style="yellow")
-        
-        table.add_row("Total Chunks", str(result.total_chunks))
-        table.add_row("Total Tokens", str(result.total_tokens))
-        table.add_row("Original Length", f"{result.original_length:,} chars")
-        table.add_row("Avg Chunk Size", f"{result.original_length // max(result.total_chunks, 1):,} chars")
+        table.add_row("Total Chunks", str(total_chunks))
+        table.add_row("Total Tokens", str(total_tokens))
+        table.add_row("Original Length", f"{original_length:,} chars")
+        table.add_row("Avg Chunk Size", f"{original_length // max(total_chunks, 1):,} chars")
         
         console.print(table)
         
@@ -929,6 +943,12 @@ def convert_chunk(
     """
     cli_app.print_banner()
     
+    if library == 'auto':
+        ps_auto = get_pdfstract()
+        available = ps_auto.list_available_libraries()
+        library = available[0] if available else 'pymupdf4llm'
+        cli_app.print_info(f"Auto-selected library: {library}")
+    
     # Validate inputs
     if not input_file.exists():
         cli_app.print_error(f"File not found: {input_file}")
@@ -938,15 +958,13 @@ def convert_chunk(
         cli_app.print_error("Only PDF files are supported")
         sys.exit(1)
     
-    # Validate library
-    converter = get_factory().get_converter(library)
-    if not converter:
-        available = [lib["name"] for lib in cli_app.get_available_libraries() if lib["available"]]
+    ps = get_pdfstract()
+    available = ps.list_available_libraries()
+    if library not in available:
         cli_app.print_error(f"Library '{library}' not available")
         cli_app.print_info(f"Available: {', '.join(available)}")
         sys.exit(1)
     
-    # Parse additional params
     try:
         extra_params = json.loads(params) if params else {}
     except json.JSONDecodeError:
@@ -968,20 +986,18 @@ def convert_chunk(
             TextColumn("[progress.description]{task.description}"),
             console=console
         ) as progress:
-            # Step 1: Convert PDF
-            progress.add_task("Converting PDF...", total=None)
-            
-            output_format = OutputFormat(format)
-            converted_text = get_factory().convert(
-                converter_name=library,
-                file_path=str(input_file),
-                output_format=output_format
-            )
-            
+            progress.add_task("Converting & chunking...", total=None)
+            result = ps.convert_chunk(input_file, library, chunker, format, chunker_params)
             progress.stop()
-            cli_app.print_success(f"Conversion complete: {len(converted_text):,} characters")
         
-        # Optionally save converted text
+        extracted_content = result["extracted_content"]
+        chunking_result = result["chunking_result"]
+        converted_text = extracted_content if isinstance(extracted_content, str) else str(extracted_content)
+        total_chunks = chunking_result["total_chunks"]
+        total_tokens = chunking_result.get("total_tokens", 0)
+        
+        cli_app.print_success(f"Conversion complete: {len(converted_text):,} characters")
+        
         if save_converted:
             ext = 'md' if format == 'markdown' else 'txt'
             converted_file = Path(input_file.stem + f'_converted.{ext}')
@@ -989,30 +1005,13 @@ def convert_chunk(
                 f.write(converted_text)
             cli_app.print_info(f"Converted text saved to: {converted_file}")
         
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console
-        ) as progress:
-            # Step 2: Chunk the converted text
-            progress.add_task("Chunking text...", total=None)
-            
-            factory = get_chunker_factory()
-            result = asyncio.run(
-                factory.chunk_with_result(chunker, converted_text, **chunker_params)
-            )
-            
-            progress.stop()
+        cli_app.print_success(f"Chunking complete: {total_chunks} chunks")
         
-        cli_app.print_success(f"Chunking complete: {result.total_chunks} chunks")
-        
-        # Handle output
         if output:
             output_path = Path(output)
         else:
             output_path = Path(input_file.stem + '_chunks.json')
         
-        # Prepare output data
         output_data = {
             "source_file": str(input_file.name),
             "conversion": {
@@ -1020,28 +1019,182 @@ def convert_chunk(
                 "format": format,
                 "text_length": len(converted_text)
             },
-            "chunking": result.to_dict()
+            "chunking": chunking_result
         }
         
-        # Save to file
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(output_data, f, indent=2, ensure_ascii=False)
         
         cli_app.print_success(f"Output saved to: {output_path.absolute()}")
         
-        # Print summary
         table = Table(title="Convert & Chunk Summary", show_lines=True)
         table.add_column("Step", style="cyan")
         table.add_column("Details", style="yellow")
-        
         table.add_row("Conversion", f"{library} → {len(converted_text):,} chars")
-        table.add_row("Chunking", f"{chunker} → {result.total_chunks} chunks")
-        table.add_row("Total Tokens", str(result.total_tokens))
-        table.add_row("Avg Chunk Size", f"{len(converted_text) // max(result.total_chunks, 1):,} chars")
+        table.add_row("Chunking", f"{chunker} → {total_chunks} chunks")
+        table.add_row("Total Tokens", str(total_tokens))
+        table.add_row("Avg Chunk Size", f"{len(converted_text) // max(total_chunks, 1):,} chars")
         
         console.print(table)
         
+    except ValueError as e:
+        cli_app.print_error(f"Operation failed: {str(e)}")
+        sys.exit(1)
+    except Exception as e:
+        cli_app.print_error(f"Operation failed: {str(e)}")
+        logger.exception("Full error traceback:")
+        sys.exit(1)
+
+
+@pdfstract.command('convert-chunk-embed')
+@click.argument('input_file', type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option('--library', '-l', default='auto', help="Extraction library to use (or 'auto')")
+@click.option('--chunker', '-c', default='auto', help="Chunker to use after conversion (or 'auto')")
+@click.option('--embedding', '-e', 'embedding_model', default='auto', help="Embedding provider/model to use (or 'auto')")
+@click.option('--format', '-f', type=click.Choice(['markdown', 'text']), default='markdown',
+              help='Intermediate output format (before chunking and embedding)')
+@click.option('--chunk-size', type=int, default=2048, help='Maximum tokens per chunk')
+@click.option('--chunk-overlap', type=int, default=0, help='Overlapping tokens between chunks')
+@click.option('--output', '-o', type=click.Path(), help='Output file path for JSON (conversion + chunks + embeddings)')
+@click.option('--save-converted', is_flag=True, help='Also save the intermediate converted text')
+@click.option('--params', type=str, default='{}', help='Additional chunker parameters as JSON')
+def convert_chunk_embed(
+    input_file: Path,
+    library: str,
+    chunker: str,
+    embedding_model: str,
+    format: str,
+    chunk_size: int,
+    chunk_overlap: int,
+    output: Optional[str],
+    save_converted: bool,
+    params: str
+):
+    """Convert a PDF, chunk it, and embed all chunks in one step.
+    
+    This is the CLI wrapper around PDFStract.convert_chunk_embed().
+    
+    Examples:
+        pdfstract convert-chunk-embed doc.pdf -l pymupdf4llm -c token -e sentence-transformers
+        pdfstract convert-chunk-embed doc.pdf -l auto -c auto -e auto --chunk-size 1024 --output rag_payload.json
+    """
+    cli_app.print_banner()
+    
+    if not input_file.exists():
+        cli_app.print_error(f"File not found: {input_file}")
+        sys.exit(1)
+    
+    if not input_file.suffix.lower() == '.pdf':
+        cli_app.print_error("Only PDF files are supported")
+        sys.exit(1)
+    
+    # Parse chunker params
+    try:
+        extra_params = json.loads(params) if params else {}
+    except json.JSONDecodeError:
+        cli_app.print_error("Invalid params JSON format")
+        sys.exit(1)
+    
+    chunker_params = {
+        "chunk_size": chunk_size,
+        "chunk_overlap": chunk_overlap,
+        **extra_params,
+    }
+    
+    ps = get_pdfstract()
+    
+    # Auto library selection for CLI parity
+    if library == 'auto':
+        available = ps.list_available_libraries()
+        if available:
+            library = available[0]
+            cli_app.print_info(f"Auto-selected library: {library}")
+        else:
+            cli_app.print_error("No available libraries for auto-selection")
+            sys.exit(1)
+    
+    available = ps.list_available_libraries()
+    if library not in available:
+        cli_app.print_error(f"Library '{library}' not available")
+        cli_app.print_info(f"Available: {', '.join(available)}")
+        sys.exit(1)
+    
+    cli_app.print_info(f"Processing: {input_file.name}")
+    cli_app.print_info(f"Convert: {library} → {format} | Chunk: {chunker} | Embed: {embedding_model}")
+    
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            progress.add_task("Converting, chunking & embedding...", total=None)
+            result = ps.convert_chunk_embed(
+                pdf_path=input_file,
+                library=library,
+                chunker=chunker,
+                embedding=embedding_model,
+                output_format=format,
+                chunker_params=chunker_params,
+            )
+            progress.stop()
+        
+        extracted_content = result["extracted_content"]
+        chunking_result = result["chunking_result"]
+        embeddings = result.get("embeddings")
+        
+        converted_text = extracted_content if isinstance(extracted_content, str) else str(extracted_content)
+        total_chunks = chunking_result["total_chunks"]
+        total_tokens = chunking_result.get("total_tokens", 0)
+        
+        cli_app.print_success(f"Conversion complete: {len(converted_text):,} characters")
+        
+        if save_converted:
+            ext = 'md' if format == 'markdown' else 'txt'
+            converted_file = Path(input_file.stem + f'_converted.{ext}')
+            with open(converted_file, 'w', encoding='utf-8') as f:
+                f.write(converted_text)
+            cli_app.print_info(f"Converted text saved to: {converted_file}")
+        
+        cli_app.print_success(f"Chunking complete: {total_chunks} chunks")
+        if embeddings is not None:
+            cli_app.print_success(f"Embeddings generated for {len(embeddings)} chunks")
+        
+        # Prepare output payload
+        if output:
+            output_path = Path(output)
+        else:
+            output_path = Path(input_file.stem + '_chunks_embed.json')
+        
+        payload = {
+            "source_file": str(input_file.name),
+            "conversion": {
+                "library": library,
+                "format": format,
+                "text_length": len(converted_text),
+            },
+            "chunking": chunking_result,
+            "embeddings": embeddings,
+        }
+        
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, indent=2, ensure_ascii=False)
+        
+        cli_app.print_success(f"Output saved to: {output_path.absolute()}")
+        
+        table = Table(title="Convert, Chunk & Embed Summary", show_lines=True)
+        table.add_column("Step", style="cyan")
+        table.add_column("Details", style="yellow")
+        table.add_row("Conversion", f"{library} → {len(converted_text):,} chars")
+        table.add_row("Chunking", f"{chunker} → {total_chunks} chunks")
+        table.add_row("Total Tokens", str(total_tokens))
+        if embeddings is not None:
+            table.add_row("Embeddings", f"{embedding_model} → {len(embeddings)} vectors")
+        
+        console.print(table)
+    
     except ValueError as e:
         cli_app.print_error(f"Operation failed: {str(e)}")
         sys.exit(1)

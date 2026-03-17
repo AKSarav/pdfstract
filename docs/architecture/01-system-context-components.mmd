@@ -1,0 +1,212 @@
+%% PDFStract System Context & Components Architecture
+%% Shows users, entry points (CLI, Web, API), core service factories,
+%% 25+ implementations across converters/chunkers/embeddings, and external systems
+
+graph TD
+    subgraph "Users & Entry Points"
+        U1["👤 CLI User"]
+        U2["👤 Web UI User"]
+        U3["👤 Python Developer"]
+        
+        CLI["CLI Entry Point<br/>click CLI<br/>Commands: convert, chunk, embed"]
+        WEB["Web API Entry Point<br/>FastAPI<br/>Endpoints: /convert, /embed"]
+        LIB["Library API Entry Point<br/>PDFStract class<br/>Methods: convert(), chunk(), embed()"]
+    end
+
+    subgraph "Request Router"
+        ROUTER["Request Dispatcher<br/>Validate & Route<br/>to appropriate factory"]
+    end
+
+    subgraph "Core Factories"
+        CONVFAC["Converter Factory<br/>get_converter(name)<br/>Lazy-loads & caches<br/>9 implementations"]
+        
+        CHUNKFAC["Chunker Factory<br/>get_chunker(name)<br/>Lazy-loads & caches<br/>10 implementations"]
+        
+        EMBEDFAC["Embeddings Factory<br/>get_wrapper(provider)<br/>Lazy-loads & caches<br/>6 providers"]
+    end
+
+    subgraph "PDF Converters"
+        C1["PyMuPDF4LLM<br/>Fast text extraction<br/>No ML models"]
+        C2["Marker<br/>Best quality<br/>Based on layout"]
+        C3["Docling<br/>ML-powered<br/>Structure-aware"]
+        C4["PaddleOCR<br/>OCR-based<br/>Handles scans"]
+        C5["DeepSeekOCR<br/>Advanced OCR<br/>Multi-language"]
+        C6["Pytesseract<br/>Simple OCR<br/>Google Tesseract"]
+        C7["Unstructured<br/>Flexible extraction<br/>Multiple formats"]
+        C8["MarkItDown<br/>Fast extraction<br/>Via local binary"]
+        C9["MinerU<br/>CLI-based<br/>Offline capable"]
+    end
+
+    subgraph "Text Chunkers"
+        Ch1["TokenChunker<br/>Fixed token size"]
+        Ch2["SentenceChunker<br/>Respects boundaries"]
+        Ch3["RecursiveChunker<br/>Hierarchical"]
+        Ch4["SemanticChunker<br/>Embedding-based similarity"]
+        Ch5["CodeChunker<br/>AST-aware for code"]
+        Ch6["TableChunker<br/>Markdown tables"]
+        Ch7["LateChunker<br/>ColBERT retrieval"]
+        Ch8["NeuralChunker<br/>Boundary detection"]
+        Ch9["FastChunker<br/>Regex-based"]
+        Ch10["SlumberChunker<br/>LLM-powered"]
+    end
+
+    subgraph "Embedding Providers"
+        E1["OpenAI<br/>text-embedding-3"]
+        E2["Azure OpenAI<br/>Enterprise"]
+        E3["Google Generative<br/>Gemini"]
+        E4["Ollama<br/>Local models"]
+        E5["Sentence-Transformers<br/>Lightweight local"]
+        E6["Model2Vec<br/>Gensim-based"]
+    end
+
+    subgraph "Support Services"
+        DB["Database Service<br/>SQLite metadata<br/>Store results"]
+        QM["Queue Manager<br/>Parallel processing<br/>Worker threads"]
+        RM["Results Manager<br/>File storage<br/>~/.pdfstract/results"]
+        LOG["Logger<br/>Loguru<br/>~/.pdfstract/logs"]
+    end
+
+    subgraph "External Systems"
+        PDFFILE["PDF Files<br/>.pdf, .pptx, .docx<br/>et al"]
+        EXTAPI["External LLM APIs<br/>OpenAI, Azure,<br/>Google, Ollama"]
+        OCRENG["OCR Engines<br/>PaddleOCR, DeepSeek<br/>Tesseract, Unstructured"]
+        CACHE["Model Cache<br/>HF transformers<br/>~/,cache/huggingface"]
+    end
+
+    %% User flows
+    U1 -->|"invokes"| CLI
+    U2 -->|"accesses"| WEB
+    U3 -->|"imports"| LIB
+
+    CLI -->|"sends request"| ROUTER
+    WEB -->|"sends request"| ROUTER
+    LIB -->|"sends request"| ROUTER
+
+    %% Router distributes
+    ROUTER -->|"orchestrates"| CONVFAC
+    ROUTER -->|"orchestrates"| CHUNKFAC
+    ROUTER -->|"orchestrates"| EMBEDFAC
+    ROUTER -->|"uses"| QM
+    ROUTER -->|"uses"| LOG
+
+    %% Factory implementations
+    CONVFAC -->|"manages"| C1
+    CONVFAC -->|"manages"| C2
+    CONVFAC -->|"manages"| C3
+    CONVFAC -->|"manages"| C4
+    CONVFAC -->|"manages"| C5
+    CONVFAC -->|"manages"| C6
+    CONVFAC -->|"manages"| C7
+    CONVFAC -->|"manages"| C8
+    CONVFAC -->|"manages"| C9
+
+    CHUNKFAC -->|"manages"| Ch1
+    CHUNKFAC -->|"manages"| Ch2
+    CHUNKFAC -->|"manages"| Ch3
+    CHUNKFAC -->|"manages"| Ch4
+    CHUNKFAC -->|"manages"| Ch5
+    CHUNKFAC -->|"manages"| Ch6
+    CHUNKFAC -->|"manages"| Ch7
+    CHUNKFAC -->|"manages"| Ch8
+    CHUNKFAC -->|"manages"| Ch9
+    CHUNKFAC -->|"manages"| Ch10
+
+    EMBEDFAC -->|"manages"| E1
+    EMBEDFAC -->|"manages"| E2
+    EMBEDFAC -->|"manages"| E3
+    EMBEDFAC -->|"manages"| E4
+    EMBEDFAC -->|"manages"| E5
+    EMBEDFAC -->|"manages"| E6
+
+    %% Converters access externals
+    C1 -->|"reads"| PDFFILE
+    C2 -->|"reads"| PDFFILE
+    C3 -->|"reads"| PDFFILE
+    C4 -->|"uses"| OCRENG
+    C5 -->|"uses"| OCRENG
+    C6 -->|"uses"| OCRENG
+    C7 -->|"reads"| PDFFILE
+    C8 -->|"reads"| PDFFILE
+    C9 -->|"uses"| OCRENG
+
+    %% Chunkers may use embeddings
+    Ch4 -->|"requires"| EMBEDFAC
+    Ch7 -->|"requires"| EMBEDFAC
+    Ch8 -->|"may use"| EMBEDFAC
+
+    %% Embeddings call external APIs
+    E1 -->|"calls"| EXTAPI
+    E2 -->|"calls"| EXTAPI
+    E3 -->|"calls"| EXTAPI
+    E4 -->|"calls"| EXTAPI
+    E5 -->|"downloads models"| CACHE
+    E6 -->|"downloads models"| CACHE
+
+    %% All write to DB
+    CONVFAC -->|"stores metadata"| DB
+    CHUNKFAC -->|"stores chunks"| DB
+    EMBEDFAC -->|"stores embeddings"| DB
+
+    %% Support services
+    CONVFAC -->|"logs"| LOG
+    CHUNKFAC -->|"logs"| LOG
+    EMBEDFAC -->|"logs"| LOG
+    DB -->|"logs"| LOG
+
+    CONVFAC -->|"distributes"| QM
+    CHUNKFAC -->|"distributes"| QM
+    EMBEDFAC -->|"distributes"| QM
+
+    CONVFAC -->|"saves results"| RM
+    CHUNKFAC -->|"saves results"| RM
+    EMBEDFAC -->|"saves results"| RM
+
+    %% Styling
+    style U1 fill:#e3f2fd
+    style U2 fill:#e3f2fd
+    style U3 fill:#e3f2fd
+    style CLI fill:#bbdefb
+    style WEB fill:#bbdefb
+    style LIB fill:#bbdefb
+    style ROUTER fill:#fff9c4
+    
+    style CONVFAC fill:#fff3e0
+    style C1 fill:#fff3e0
+    style C2 fill:#fff3e0
+    style C3 fill:#fff3e0
+    style C4 fill:#fff3e0
+    style C5 fill:#fff3e0
+    style C6 fill:#fff3e0
+    style C7 fill:#fff3e0
+    style C8 fill:#fff3e0
+    style C9 fill:#fff3e0
+    
+    style CHUNKFAC fill:#f3e5f5
+    style Ch1 fill:#f3e5f5
+    style Ch2 fill:#f3e5f5
+    style Ch3 fill:#f3e5f5
+    style Ch4 fill:#f3e5f5
+    style Ch5 fill:#f3e5f5
+    style Ch6 fill:#f3e5f5
+    style Ch7 fill:#f3e5f5
+    style Ch8 fill:#f3e5f5
+    style Ch9 fill:#f3e5f5
+    style Ch10 fill:#f3e5f5
+    
+    style EMBEDFAC fill:#e8f5e9
+    style E1 fill:#e8f5e9
+    style E2 fill:#e8f5e9
+    style E3 fill:#e8f5e9
+    style E4 fill:#e8f5e9
+    style E5 fill:#e8f5e9
+    style E6 fill:#e8f5e9
+    
+    style DB fill:#ffccbc
+    style QM fill:#ffe0b2
+    style RM fill:#ffe0b2
+    style LOG fill:#ffe0b2
+    
+    style PDFFILE fill:#ffccbc
+    style EXTAPI fill:#ffccbc
+    style OCRENG fill:#ffccbc
+    style CACHE fill:#ffccbc

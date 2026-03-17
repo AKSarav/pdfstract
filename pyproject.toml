@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdfstract"
-version = "1.1.0"
+version = "1.1.1"
 description = "PDFStract - The Extraction and Chunking Layer in Your RAG Pipeline - Available as CLI - WEBUI - API"
 readme = "CLI_README.md"
 requires-python = ">=3.11, <=3.13.3"
@@ -44,6 +44,7 @@ dependencies = [
     "pillow>=10.4.0",
     "pypdf2>=3.0.1",
     "chonkie[all]>=1.0.0",
+    "pip>=26.0.1",
 ]
 
 [project.optional-dependencies]
@@ -55,6 +56,11 @@ standard = [
     "unstructured[pdf]>=0.15.0",
     # Internal dependencies
     "pdf2image>=1.17.0",
+    # Embedding providers (optional)
+    "langchain-openai>=1.1.8",
+    "langchain_ollama>=1.0.1",
+    "gensim>=4.4.0",
+    "langchain-google-genai>=4.2.1"
 ]
 
 # ADVANCED - Adds marker, docling, paddleocr, deepseek (ML-powered, best quality)

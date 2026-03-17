@@ -12,3 +12,10 @@ pdfstract-311/
 tests/results/*
 hf-cache/*
 ultralytics-cache/*
+results/
+*chunks.json
+.env.example
+uv.lock
+test.ipynb
+notebooks/
+.github/

@@ -18,7 +18,7 @@ const sidebars: SidebarsConfig = {
     'intro',
     {
       type: 'category',
-      label: 'Quick Start',
+      label: 'Getting Started',
       items: [
         'quick-start',
         'installation',
@@ -26,14 +26,23 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Python Module',
+      label: 'Features',
+      items: [
+        'features/extract',
+        'features/chunk',
+        'features/embed',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Python API',
       items: [
         'api/overview',
       ],
     },
     {
       type: 'category',
-      label: 'Command Line Interface',
+      label: 'CLI',
       items: [
         'cli/overview',
       ],

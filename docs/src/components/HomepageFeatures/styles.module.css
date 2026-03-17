@@ -1,11 +1,158 @@
 .features {
-  display: flex;
-  align-items: center;
-  padding: 2rem 0;
-  width: 100%;
+  padding: 4rem 0;
+  background: #fafbfc;
 }
 
-.featureSvg {
-  height: 200px;
-  width: 200px;
+[data-theme='dark'] .features {
+  background: #1a1a1a;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.sectionTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 0.5rem;
+}
+
+[data-theme='dark'] .sectionTitle {
+  color: #f5f5f5;
+}
+
+.sectionSubtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+}
+
+[data-theme='dark'] .sectionSubtitle {
+  color: #aaa;
+}
+
+.featureCard {
+  display: block;
+  padding: 2rem;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid #e8e8e8;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  height: 100%;
+}
+
+.featureCard:hover {
+  text-decoration: none;
+  color: inherit;
+  border-color: #062139;
+  box-shadow: 0 4px 12px rgba(6, 33, 57, 0.08);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .featureCard {
+  background: #252525;
+  border-color: #333;
+}
+
+[data-theme='dark'] .featureCard:hover {
+  border-color: #3892c6;
+  box-shadow: 0 4px 12px rgba(56, 146, 198, 0.15);
+}
+
+.featureIcon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  color: #062139;
+}
+
+.featureIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+[data-theme='dark'] .featureIcon {
+  color: #3892c6;
+}
+
+.featureTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1a1a2e;
+}
+
+[data-theme='dark'] .featureTitle {
+  color: #f5f5f5;
+}
+
+.featureDescription {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #555;
+  margin: 0;
+}
+
+[data-theme='dark'] .featureDescription {
+  color: #bbb;
+}
+
+.codeExample {
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.valueProposition {
+  font-size: 1rem;
+  color: #475569;
+  margin-bottom: 1rem;
+}
+
+.valueProposition strong {
+  color: #0f172a;
+}
+
+[data-theme='dark'] .valueProposition {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .valueProposition strong {
+  color: #f1f5f9;
+}
+
+.codeTitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #134c9c;
+  margin-bottom: 0.75rem;
+}
+
+[data-theme='dark'] .codeTitle {
+  color: #94a3b8;
+}
+
+.codeBlock {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.codeBlock code {
+  color: #02131c;
+  font-size: 0.9rem;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  padding: 2%;
+}
+
+[data-theme='dark'] .codeBlock {
+  background: #0c4a6e;
+  border-color: #075985;
+}
+
+[data-theme='dark'] .codeBlock code {
+  color: #bae6fd;
 }

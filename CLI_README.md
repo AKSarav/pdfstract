@@ -1,176 +1,113 @@
 # PDFStract
 
-**The first layer in your RAG pipeline** — Extract, chunk, and prepare PDFs for AI.
+**The Data Preparation Layer for RAG** — Extract. Chunk. Embed.
 
 [![PyPI](https://img.shields.io/pypi/v/pdfstract)](https://pypi.org/project/pdfstract/)
 [![Python](https://img.shields.io/pypi/pyversions/pdfstract)](https://pypi.org/project/pdfstract/)
 [![License](https://img.shields.io/github/license/AKSarav/pdfstract)](https://github.com/AKSarav/pdfstract/blob/main/LICENSE)
 
-PDFStract converts PDFs to text using 10+ extraction libraries and chunks them using 10+ methods — all through a simple Python API, CLI, or Web UI.
+**One unified API.** Switch between 10+ extraction libraries, 10+ chunking methods, and multiple embedding providers with a single parameter change. Focus on your RAG outcomes, not library dependencies.
 
 ## Installation
 
 ```bash
-# Base (fast extractors)
-pip install pdfstract
-
-# Standard (+ OCR support)
-pip install pdfstract[standard]
-
-# Advanced (+ ML-powered extractors)
-pip install pdfstract[advanced]
-
-# All libraries
-pip install pdfstract[all]
+pip install pdfstract              # Base - pymupdf4llm, markitdown
+pip install pdfstract[standard]    # + OCR (pytesseract, unstructured)
+pip install pdfstract[advanced]    # + ML-powered (marker, docling, paddleocr)
+pip install pdfstract[all]         # Everything
 ```
 
-## Quick Start — Python Module
-
-### Convert a PDF
-
-```python
-from pdfstract import convert_pdf
-
-# One-liner conversion
-text = convert_pdf('document.pdf', library='marker')
-print(text)
-```
-
-### Convert and Chunk for RAG
+## Python API
 
 ```python
 from pdfstract import PDFStract
 
 pdfstract = PDFStract()
 
-# Extract text
-text = pdfstract.convert('document.pdf', library='docling')
+# Extract
+text = pdfstract.convert('document.pdf', library='auto')
 
-# Chunk for embeddings
+# Chunk
 chunks = pdfstract.chunk(text, chunker='semantic', chunk_size=512)
 
-print(f"Created {chunks['total_chunks']} chunks")
+# Embed
+vectors = pdfstract.embed_texts([c['text'] for c in chunks['chunks']])
+
+# Combined pipelines
+result = pdfstract.convert_chunk('document.pdf', library='marker', chunker='token')
+result = pdfstract.convert_chunk_embed('document.pdf', embedding='sentence-transformers')
+```
+
+### Extract Examples
+
+```python
+# Auto-select best available library
+text = pdfstract.convert('document.pdf', library='auto')
+
+# Use specific library
+text = pdfstract.convert('document.pdf', library='marker')
+text = pdfstract.convert('document.pdf', library='docling', output_format='json')
+
+# Batch processing
+results = pdfstract.batch_convert('./pdfs', library='pymupdf4llm', parallel_workers=4)
+
+# Async
+text = await pdfstract.convert_async('document.pdf', library='marker')
+```
+
+### Chunk Examples
+
+```python
+# Token-based chunking
+chunks = pdfstract.chunk(text, chunker='token', chunk_size=512, chunk_overlap=50)
+
+# Semantic chunking
+chunks = pdfstract.chunk(text, chunker='semantic', chunk_size=1024)
+
+# Code-aware chunking
+chunks = pdfstract.chunk(code_text, chunker='code')
+
+# Access results
 for chunk in chunks['chunks']:
-    print(f"- {chunk['text'][:50]}...")
+    print(f"Chunk {chunk['chunk_id']}: {chunk['token_count']} tokens")
 ```
 
-### List Available Libraries
+### Embed Examples
 
 ```python
-from pdfstract import PDFStract
+# Embed multiple texts
+vectors = pdfstract.embed_texts(["First text", "Second text"], model='sentence-transformers')
 
-pdfstract = PDFStract()
-print(pdfstract.list_available_libraries())
-# ['pymupdf4llm', 'markitdown', 'marker', 'docling', ...]
+# Embed single text
+vector = pdfstract.embed_text("Hello world", model='openai')
 
-print(pdfstract.list_chunkers())
-# ['token', 'sentence', 'semantic', 'recursive', ...]
+# List available providers
+providers = pdfstract.list_available_embeddings()
 ```
 
-### Batch Processing
-
-```python
-from pdfstract import PDFStract
-
-pdfstract = PDFStract()
-
-results = pdfstract.batch_convert(
-    pdf_directory='./pdfs',
-    library='pymupdf4llm',
-    parallel_workers=4
-)
-print(f"Converted {results['success']} files")
-```
-
-### Async Support
-
-```python
-import asyncio
-from pdfstract import PDFStract
-
-async def process():
-    pdfstract = PDFStract()
-    result = await pdfstract.convert_async('doc.pdf', library='marker')
-    return result
-
-asyncio.run(process())
-```
-
-## Quick Start — CLI
+## CLI
 
 ```bash
-# List available libraries
-pdfstract libs
-
-# Convert a PDF
-pdfstract convert document.pdf --library marker --output result.md
-
-# Convert and chunk
-pdfstract convert-chunk document.pdf --library docling --chunker semantic
-
-# Batch convert directory
-pdfstract batch ./pdfs --library pymupdf4llm --parallel 4 --output ./converted
-
-# Compare libraries
-pdfstract compare sample.pdf -l marker -l docling -l pymupdf4llm
+pdfstract convert document.pdf --library marker
+pdfstract convert-chunk document.pdf --chunker semantic
+pdfstract convert-chunk-embed document.pdf --embedding sentence-transformers
+pdfstract batch ./pdfs --parallel 4
 ```
 
-## Supported Libraries
+## What's Included
 
-| Library | Type | Best For |
-|---------|------|----------|
-| **pymupdf4llm** | Fast | Simple PDFs, speed |
-| **markitdown** | Balanced | General documents |
-| **marker** | ML | Complex layouts |
-| **docling** | ML | Document intelligence |
-| **paddleocr** | OCR | Scanned PDFs |
-| **unstructured** | Smart | Structured extraction |
-| **pytesseract** | OCR | Classic OCR |
-| **mineru** | ML | Best quality (Docker) |
+| Tier | Libraries |
+|------|-----------|
+| **Base** | pymupdf4llm, markitdown |
+| **Standard** | + pytesseract, unstructured |
+| **Advanced** | + marker, docling, paddleocr, deepseek |
 
-## Supported Chunkers
+**Chunkers:** token, sentence, semantic, recursive, code, and more
 
-| Chunker | Best For |
-|---------|----------|
-| **token** | Fixed-size chunks |
-| **sentence** | Natural boundaries |
-| **semantic** | Topic-coherent chunks |
-| **recursive** | Structured documents |
-| **code** | Source code |
-| **fast** | High throughput |
-
-## Web UI & Docker
-
-```bash
-git clone https://github.com/aksarav/pdfstract.git
-cd pdfstract
-make up
-```
-
-Open http://localhost:3000 for Web UI, http://localhost:8000 for API.
+**Embeddings:** OpenAI, Azure, Google, Ollama, Sentence Transformers
 
 ## Documentation
 
-📖 **[pdfstract.com](https://pdfstract.com)** — Full documentation, guides, and examples
+📖 **[pdfstract.com](https://pdfstract.com)** — Full docs, guides, and API reference
 
-**Legacy:** [aksarav.github.io/pdfstract](https://aksarav.github.io/pdfstract)
-
-- [Installation Guide](https://aksarav.github.io/pdfstract/installation)
-- [Python Module Reference](https://aksarav.github.io/pdfstract/api/overview)
-- [CLI Guide](https://aksarav.github.io/pdfstract/cli/overview)
-- [Web UI Guide](https://aksarav.github.io/pdfstract/web-ui/overview)
-
-## Links
-
-- **GitHub:** [github.com/aksarav/pdfstract](https://github.com/aksarav/pdfstract)
-- **PyPI:** [pypi.org/project/pdfstract](https://pypi.org/project/pdfstract)
-- **Issues:** [github.com/aksarav/pdfstract/issues](https://github.com/aksarav/pdfstract/issues)
-
-## License
-
-MIT License — see [LICENSE](https://github.com/aksarav/pdfstract/blob/main/LICENSE)
-
----
-
-**Made with ❤️ for AI RAG pipelines**
-
+**GitHub:** [github.com/aksarav/pdfstract](https://github.com/aksarav/pdfstract) · [Issues](https://github.com/aksarav/pdfstract/issues) · [MIT License](https://github.com/aksarav/pdfstract/blob/main/LICENSE)

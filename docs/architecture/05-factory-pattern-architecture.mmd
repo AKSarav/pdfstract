@@ -1,0 +1,72 @@
+%% PDFStract Factory Pattern Architecture
+%% Illustrates lazy-loading, dependency injection, caching, and dynamic imports
+
+graph TD
+    subgraph "Factory Pattern Architecture"
+        A["Lazy-Load Registry"]
+        B["Dynamic Import System"]
+        C["Singleton Cache"]
+        D["Provider Mapping"]
+        E["Credential Validation"]
+        F["Error Handling & Fallback"]
+    end
+
+    subgraph "Converter Factory"
+        CF["CLILazyFactory / ConverterFactory"]
+        CFM["Provider Map<br/>PyMuPDF4LLM → pymupmdf4llm<br/>Marker → marker<br/>Docling → docling<br/>...9 total"]
+        CFC["Cached Instances<br/>Dict~str, PDFConverter~"]
+    end
+
+    subgraph "Chunker Factory"
+        ChF["ChunkerFactory"]
+        ChFM["Provider Map<br/>token → TokenChunker<br/>semantic → SemanticChunker<br/>...10 total"]
+        ChFC["Cached Instances<br/>Dict~str, BaseChunker~"]
+    end
+
+    subgraph "Embeddings Factory"
+        EF["EmbeddingsFactory"]
+        EFM["Provider Map<br/>openai → OpenAI wrapper<br/>azure-openai → Azure wrapper<br/>...6 total"]
+        EFC["Cached Instances<br/>Dict~str, Wrapper~"]
+    end
+
+    subgraph "Import Mechanism"
+        IM["importlib.import_module<br/>__import__<br/>getattr on module"]
+        DI["Dependency Injection<br/>API Keys, Config, Device"]
+    end
+
+    subgraph "External Dependencies"
+        ED["PyPI Packages<br/>Optional Extras<br/>Auto-Download on Demand"]
+    end
+
+    A -->|"Registry stores<br/>provider → module path"| D
+    B -->|"Dynamically loads<br/>module on first call"| IM
+    C -->|"Caches initialized<br/>provider instances"| CF
+    C -->|"Caches initialized<br/>chunker instances"| ChF
+    C -->|"Caches initialized<br/>wrapper instances"| EF
+    
+    CF -->|"Provides converters"| CFM
+    CF -->|"Stores in cache"| CFC
+    ChF -->|"Provides chunkers"| ChFM
+    ChF -->|"Stores in cache"| ChFC
+    EF -->|"Provides wrappers"| EFM
+    EF -->|"Stores in cache"| EFC
+    
+    D -->|"Maps provider name<br/>to module path & class"| IM
+    IM -->|"Instantiates class"| DI
+    DI -->|"Injects credentials,<br/>config, device"| ED
+    E -->|"Validates API keys<br/>& configuration"| EF
+    F -->|"Graceful fallback<br/>if import fails"| CF
+    F -->|"Logs unavailability"| ChF
+
+    style A fill:#e1f5ff
+    style B fill:#e1f5ff
+    style C fill:#e1f5ff
+    style D fill:#e1f5ff
+    style E fill:#e1f5ff
+    style F fill:#e1f5ff
+    style CF fill:#fff3e0
+    style ChF fill:#f3e5f5
+    style EF fill:#e8f5e9
+    style IM fill:#ffe0b2
+    style DI fill:#f0f4c3
+    style ED fill:#ffccbc

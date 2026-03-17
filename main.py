@@ -11,13 +11,11 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from services.ocrfactory import OCRFactory
 from services.base import OutputFormat
 from services.logger import logger
 from services.db_service import DatabaseService
 from services.queue_manager import QueueManager
 from services.results_manager import ResultsManager
-from services.chunker_factory import get_chunker_factory
 
 app = FastAPI(title="PDFStract - Unified PDF extraction wrapper", description="Convert PDF files to Markdown using various libraries")
 
@@ -56,14 +54,15 @@ if static_dir.exists():
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Lazy initialization - factory will be created on first use
-_factory = None
-def get_factory():
-    """Lazy factory initialization to avoid blocking startup with model downloads"""
-    global _factory
-    if _factory is None:
-        _factory = OCRFactory()
-    return _factory
+# Lazy initialization - PDFStract API backs all conversion/chunking
+_pdfstract = None
+def get_pdfstract():
+    """Lazy PDFStract instance to avoid blocking startup with model downloads"""
+    global _pdfstract
+    if _pdfstract is None:
+        from pdfstract import PDFStract
+        _pdfstract = PDFStract()
+    return _pdfstract
 
 # Initialize comparison services
 db_service = DatabaseService()
@@ -90,13 +89,13 @@ async def health_check():
 @app.get("/libraries")
 async def get_available_libraries():
     """Get list of available conversion libraries with download status"""
-    return {"libraries": get_factory().list_all_converters()}
+    return {"libraries": get_pdfstract().list_libraries()}
 
 
 @app.get("/libraries/{library_name}/status")
 async def get_library_status(library_name: str):
     """Get detailed status for a specific library"""
-    status = get_factory().get_converter_status(library_name)
+    status = get_pdfstract().get_converter_status(library_name)
     if not status:
         raise HTTPException(status_code=404, detail=f"Library '{library_name}' not found")
     return status
@@ -110,7 +109,7 @@ async def download_library_models(library_name: str):
     This endpoint downloads required models for converters like marker, docling, etc.
     The download happens asynchronously and may take several minutes.
     """
-    result = await get_factory().prepare_converter(library_name)
+    result = await get_pdfstract().prepare_converter_async(library_name)
     
     if result["success"]:
         return JSONResponse({
@@ -164,11 +163,7 @@ async def convert_pdf(
         # Convert using factory with timeout protection
         try:
             result = await asyncio.wait_for(
-                get_factory().convert_async(
-                    converter_name=library,
-                    file_path=temp_file_path,
-                    output_format=format_enum
-                ),
+                get_pdfstract().convert_async(temp_file_path, library, output_format),
                 timeout=300.0  # 5 minute timeout
             )
         except asyncio.TimeoutError:
@@ -417,8 +412,7 @@ async def get_library_stats():
 async def get_available_chunkers():
     """Get list of available chunkers with their parameter schemas"""
     try:
-        factory = get_chunker_factory()
-        return {"chunkers": factory.list_all_chunkers()}
+        return {"chunkers": get_pdfstract().list_chunkers()}
     except Exception as e:
         logger.error(f"Error listing chunkers: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -448,22 +442,19 @@ async def chunk_text(
         raise HTTPException(status_code=400, detail="Invalid params JSON format")
     
     try:
-        factory = get_chunker_factory()
-        
         logger.info(f"Chunking text with chunker: {chunker}, params: {chunker_params}")
         
-        # Chunk with timeout protection
         result = await asyncio.wait_for(
-            factory.chunk_with_result(chunker, text, **chunker_params),
+            get_pdfstract().chunk_text_async(text, chunker, **chunker_params),
             timeout=60.0  # 1 minute timeout for chunking
         )
         
-        logger.info(f"Chunking successful: {result.total_chunks} chunks created")
+        logger.info(f"Chunking successful: {result['total_chunks']} chunks created")
         
         return JSONResponse({
             "success": True,
             "chunker": chunker,
-            "result": result.to_dict()
+            "result": result
         })
         
     except asyncio.TimeoutError:
@@ -538,32 +529,22 @@ async def convert_and_chunk(
         
         logger.info(f"Starting convert-and-chunk: library={library}, chunker={chunker}")
         
-        # Step 1: Convert PDF
         try:
-            converted_text = await asyncio.wait_for(
-                get_factory().convert_async(
-                    converter_name=library,
-                    file_path=temp_file_path,
-                    output_format=format_enum
+            result = await asyncio.wait_for(
+                get_pdfstract().convert_chunk_async(
+                    temp_file_path, library, chunker, output_format, chunk_params
                 ),
-                timeout=300.0  # 5 minute timeout for conversion
+                timeout=360.0  # 6 minutes total for convert + chunk
             )
         except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Conversion timed out after 5 minutes")
+            raise HTTPException(status_code=504, detail="Convert-and-chunk timed out after 6 minutes")
+        
+        extracted_content = result["extracted_content"]
+        chunking_result = result["chunking_result"]
+        converted_text = extracted_content if isinstance(extracted_content, str) else str(extracted_content)
         
         logger.info(f"Conversion successful, text length: {len(converted_text)}")
-        
-        # Step 2: Chunk the converted text
-        factory = get_chunker_factory()
-        try:
-            chunking_result = await asyncio.wait_for(
-                factory.chunk_with_result(chunker, converted_text, **chunk_params),
-                timeout=60.0  # 1 minute timeout for chunking
-            )
-        except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Chunking timed out after 1 minute")
-        
-        logger.info(f"Chunking successful: {chunking_result.total_chunks} chunks")
+        logger.info(f"Chunking successful: {chunking_result['total_chunks']} chunks")
         
         return JSONResponse({
             "success": True,
@@ -575,7 +556,7 @@ async def convert_and_chunk(
                 "text_length": len(converted_text),
                 "content": converted_text
             },
-            "chunking": chunking_result.to_dict()
+            "chunking": chunking_result
         })
         
     except HTTPException:
@@ -647,19 +628,7 @@ async def _convert_single_library(task_id, library_name, file_path, output_forma
     start_time = time.time()
     
     try:
-        # Get converter
-        converter = get_factory().get_converter(library_name)
-        if not converter:
-            raise ValueError(f"Converter {library_name} not available")
-        
-        # Convert
-        format_enum = OutputFormat(output_format)
-        if format_enum == OutputFormat.MARKDOWN:
-            result = await converter.convert_to_md(file_path)
-        elif format_enum == OutputFormat.JSON:
-            result = await converter.convert_to_json(file_path)
-        else:
-            result = await converter.convert_to_text(file_path)
+        result = await get_pdfstract().convert_async(file_path, library_name, output_format)
         
         # Save result
         output_file, output_size = results_manager.save_conversion(

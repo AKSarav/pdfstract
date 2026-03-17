@@ -1,0 +1,46 @@
+%% PDFStract Interaction Sequence Diagram
+%% Shows temporal flow of a typical convert + chunk + embed workflow
+
+sequenceDiagram
+    participant User as User/CLI/API
+    participant Validator as Request Validator
+    participant ConvFac as Converter Factory
+    participant Converter as PDF Converter
+    participant ChunkFac as Chunker Factory
+    participant Chunker as Text Chunker
+    participant EmbFac as Embeddings Factory
+    participant Embeddings as Embedding Wrapper
+    participant ExtAPI as External System
+
+    User->>Validator: convert(pdf, converter, chunker, provider)
+    Validator->>Validator: validate input
+    
+    Validator->>ConvFac: get_converter(name)
+    ConvFac->>ConvFac: cache lookup
+    ConvFac->>Converter: create instance
+    ConvFac-->>Validator: Converter
+    
+    Validator->>Converter: convert(pdf_path)
+    Converter->>ExtAPI: read & extract text
+    Converter-->>Validator: text
+    
+    Validator->>ChunkFac: get_chunker(name)
+    ChunkFac->>ChunkFac: cache lookup
+    ChunkFac->>Chunker: create instance
+    ChunkFac-->>Validator: Chunker
+    
+    Validator->>Chunker: chunk(text)
+    Chunker->>Chunker: split text to chunks
+    Chunker-->>Validator: List~Chunk~
+    
+    Validator->>EmbFac: get_wrapper(provider)
+    EmbFac->>EmbFac: cache lookup
+    EmbFac->>Embeddings: create instance
+    EmbFac-->>Validator: Wrapper
+    
+    Validator->>Embeddings: embed_batch(chunks)
+    Embeddings->>ExtAPI: call LLM/local model
+    ExtAPI-->>Embeddings: embeddings
+    Embeddings-->>Validator: List~EmbeddingResult~
+    
+    Validator-->>User: ChunkingResult with embeddings

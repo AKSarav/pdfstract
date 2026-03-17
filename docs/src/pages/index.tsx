@@ -21,7 +21,12 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/quick-start">
-            Get Started - 5min ⏱️
+            Get Started
+          </Link>
+          <Link
+            className="button button--outline button--lg"
+            to="https://github.com/aksarav/pdfstract">
+            View on GitHub
           </Link>
         </div>
       </div>

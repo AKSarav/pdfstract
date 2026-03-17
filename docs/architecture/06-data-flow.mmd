@@ -1,0 +1,123 @@
+%% PDFStract Data Flow Diagram
+%% Shows request flow through the system from entry points to external systems and back
+
+graph TD
+    subgraph "Entry Points"
+        C["CLI Command<br/>click invoke"]
+        W["Web API<br/>FastAPI endpoint"]
+        L["Python Library<br/>PDFStract() call"]
+    end
+
+    subgraph "Request Validation & Routing"
+        RV["Request Validator<br/>Validate PDF path/config"]
+        RC["Route to Converter<br/>Select converter"]
+    end
+
+    subgraph "Conversion Phase"
+        CF["Converter Factory<br/>get_converter(name)"]
+        CCVT["Selected Converter<br/>PDFConverter.convert()"]
+        OUT["Output Manager<br/>Save PDF text"]
+    end
+
+    subgraph "Chunking Phase"
+        ChF["Chunker Factory<br/>get_chunker(name)"]
+        CCHK["Selected Chunker<br/>BaseChunker.chunk()"]
+        CH["Chunk Storage<br/>List~Chunk~"]
+    end
+
+    subgraph "Embedding Phase"
+        EF["Embeddings Factory<br/>get_wrapper(provider)"]
+        EW["Selected Embedding Wrapper<br/>BaseEmbeddingsWrapper"]
+        EMBED["Vector Storage<br/>List~EmbeddingResult~"]
+    end
+
+    subgraph "External Systems"
+        PDF["PDF File<br/>.pdf, .pptx, etc."]
+        DB["SQLite Database<br/>Store metadata"]
+        LLM1["LLM API<br/>OpenAI, Azure, Google"]
+        LLM2["Local Model<br/>Ollama, ST, Model2Vec"]
+        OCR["OCR Engine<br/>PaddleOCR, DeepSeek, Tesseract"]
+    end
+
+    subgraph "Support Services"
+        QM["Queue Manager<br/>Parallel processing"]
+        RM["Results Manager<br/>File storage ~/.pdfstract/results"]
+        LOG["Logger<br/>Loguru @ ~/.pdfstract/logs"]
+    end
+
+    subgraph "Response Formatting"
+        RF["Result Formatter<br/>JSON/Chunks/Embeddings"]
+        RESP["Return to Caller<br/>Console/HTTP/Object"]
+    end
+
+    %% Flow: Entry Points
+    C --> RV
+    W --> RV
+    L --> RV
+
+    %% Flow: Validation & Routing
+    RV --> RC
+    RC --> CF
+
+    %% Flow: Conversion
+    CF --> CCVT
+    CCVT -->|"reads"| PDF
+    CCVT -->|"may use OCR"| OCR
+    CCVT --> OUT
+    OUT --> DB
+    OUT --> CH
+
+    %% Flow: Chunking (parallel or sequential)
+    CH --> ChF
+    ChF --> CCHK
+    CCHK --> CH
+
+    %% Flow: Embedding (parallel or sequential)
+    CH --> EF
+    EF --> EW
+    EW -->|"API calls"| LLM1
+    EW -->|"local inference"| LLM2
+    EW --> EMBED
+    EMBED --> DB
+
+    %% Flow: Support Services
+    RV --> QM
+    CF --> QM
+    CCVT --> RM
+    CH --> RM
+    EMBED --> RM
+    QM --> LOG
+    RM --> LOG
+    DB --> LOG
+
+    %% Flow: Response
+    EMBED --> RF
+    DB --> RF
+    RM --> RF
+    RF --> RESP
+
+    %% Styling
+    style C fill:#bbdefb
+    style W fill:#bbdefb
+    style L fill:#bbdefb
+    style RV fill:#fff9c4
+    style RC fill:#fff9c4
+    style CF fill:#fff3e0
+    style CCVT fill:#fff3e0
+    style OUT fill:#fff3e0
+    style ChF fill:#f3e5f5
+    style CCHK fill:#f3e5f5
+    style CH fill:#f3e5f5
+    style EF fill:#e8f5e9
+    style EW fill:#e8f5e9
+    style EMBED fill:#e8f5e9
+    style PDF fill:#ffccbc
+    style DB fill:#ffccbc
+    style LLM1 fill:#ffccbc
+    style LLM2 fill:#ffccbc
+    style OCR fill:#ffccbc
+    style QM fill:#ffe0b2
+    style RM fill:#ffe0b2
+    style LOG fill:#ffe0b2
+    style RF fill:#c8e6c9
+    style RESP fill:#c8e6c9

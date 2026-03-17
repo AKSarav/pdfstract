@@ -1,8 +1,11 @@
-# PDFStract — Unified PDF Ingestion for RAG Systems
-
+# PDFStract — The Unified Data Preparation Layer for RAG 
 
 <p align="center">
   <img src="uploads/pdfstract-logo.png" width="300" />
+</p>
+
+<p align="center">
+  <strong>Extract. Chunk. Embed in one line of code.</strong>
 </p>
 
 <p align="center">
@@ -12,258 +15,190 @@
   <img src="https://img.shields.io/github/license/AKSarav/pdfstract" />
 </p>
 
-
-**Building RAG or AI knowledge systems?**
-
-
-PDFStract is a unified PDF extraction and document ingestion layer 
-for RAG (Retrieval-Augmented Generation) and LLM pipelines.
-
-It standardizes PDF extraction, OCR handling, and text chunking 
-across multiple libraries — so you can build reliable AI knowledge systems 
-without fighting document parsing issues.
-
+**One unified API.** Switch between 10+ extraction libraries, 10+ chunking methods, and multiple embedding providers with a single parameter change. Focus on your RAG outcomes, not library dependencies.
 
 ![alt text](uploads/HeaderImage.png)
 
-No single PDF extractor works best for every document.
-PDFStract lets you switch, compare, and automate extraction strategies 
-through a single interface.
-
-
-## Why PDFStract Exists
-
-Modern RAG and LLM systems depend on clean document ingestion.
-
-But PDF extraction is fragmented:
-- Some libraries work better for structured reports
-- Others perform better on scanned or OCR-heavy documents
-- Output formats vary widely
-- Chunking strategies significantly impact retrieval performance
-
-Teams often waste hours testing combinations manually.
-
-PDFStract provides:
-- A unified abstraction over multiple PDF extractors
-- Standardized output formats (markdown, json, text)
-- Built-in chunking strategies for RAG pipelines
-- Easy benchmarking and comparison between libraries
-
-It becomes the standardized ingestion layer of your AI data pipeline.
-
-Get started in two lines
+## Quick Start
 
 ```python
-from pdfstract import PDFStract, convert_pdf, chunk_text
+from pdfstract import PDFStract
 
-text = convert_pdf("report.pdf", library="auto")
-chunks = chunk_text(text, chunker="semantic", chunk_size=512)
+pdfstract = PDFStract()
+
+# Complete pipeline: Extract → Chunk → Embed
+result = pdfstract.convert_chunk_embed('document.pdf')
+
+# Or step by step
+text = pdfstract.convert('document.pdf', library='auto')
+chunks = pdfstract.chunk(text, chunker='semantic', chunk_size=512)
+vectors = pdfstract.embed_texts([c['text'] for c in chunks['chunks']])
 ```
-
-## What Makes PDFStract Different?
-
-Instead of committing to a single PDF extraction library,
-PDFStract lets you:
-
-- Swap extractors with one parameter
-- Benchmark multiple libraries on the same document
-- Automate library selection
-- Standardize downstream processing
-- Keep your ingestion layer future-proof
-
-As new extraction libraries emerge,
-PDFStract allows you to integrate them without rewriting your pipeline
-
->PDFStract decouples your ingestion layer from any single extraction library.
-
-## Installation and Usage
-
-Choose based on required extraction libraries.
 
 ```bash
-pip install pdfstract
-pip install pdfstract[standard]
-pip install pdfstract[advanced]
-pip install pdfstract[all]
+# CLI: Full pipeline in one command
+pdfstract convert-chunk-embed document.pdf --library auto --chunker auto --embedding auto
 ```
 
-
-### CLI Usage
+## Installation
 
 ```bash
-# List available libraries
-pdfstract libs
-
-# List available chunkers
-pdfstract chunkers
-
-# Convert a single PDF
-pdfstract convert document.pdf --library pymupdf4llm --output result.md
-
-# Convert and chunk in one command
-pdfstract convert-chunk document.pdf --library pymupdf4llm --chunker semantic --output chunks.json
-
-# Chunk an existing text file
-pdfstract chunk document.md --chunker token --chunk-size 512 --output chunks.json
-
-# Compare multiple libraries on one PDF
-pdfstract compare sample.pdf -l pymupdf4llm -l marker -l docling --output ./comparison
-
-# Batch convert 100+ PDFs in parallel
-pdfstract batch ./documents --library pymupdf4llm --output ./converted --parallel 4
-
-# Download models for a specific library
-pdfstract download marker
+pip install pdfstract              # Base - pymupdf4llm, markitdown
+pip install pdfstract[standard]    # + OCR (pytesseract, unstructured)
+pip install pdfstract[advanced]    # + ML-powered (marker, docling, paddleocr)
+pip install pdfstract[all]         # Everything
 ```
 
-### Module Usage with Python 
+## Why PDFStract?
 
-You don't need to use the CLI! PDFStract can be easily integrated into your Python applications as a library. 
+No single PDF extractor, chunker, or embedding provider works best for every document.
 
-#### Convert a PDF (One-liner)
+PDFStract lets you **swap, compare, and automate** your data preparation strategy through a single API:
 
-```python
-from pdfstract import convert_pdf
+- **Extract**: 10+ libraries (Marker, Docling, PyMuPDF4LLM, PaddleOCR, Unstructured, and more)
+- **Chunk**: 10+ methods (Token, Semantic, Sentence, Recursive, Code-aware, and more)
+- **Embed**: Multiple providers (OpenAI, Azure, Google, Ollama, Sentence Transformers)
 
-# Quick conversion with default settings
-result = convert_pdf('sample.pdf', library='marker')
-print(result)  # Markdown content
-```
+Switch any component with a single parameter change. No code refactoring needed.
 
-#### List Available Libraries
+## Python API
+
+### Extract
 
 ```python
 from pdfstract import PDFStract
 
 pdfstract = PDFStract()
 
-# Get list of available libraries
-available = pdfstract.list_available_libraries()
-print(available)  # ['pymupdf4llm', 'marker', 'docling', ...]
+# Auto-select best available library
+text = pdfstract.convert('document.pdf', library='auto')
+
+# Use specific library
+text = pdfstract.convert('document.pdf', library='marker')
+text = pdfstract.convert('document.pdf', library='docling', output_format='json')
+
+# Batch processing
+results = pdfstract.batch_convert('./pdfs', library='pymupdf4llm', parallel_workers=4)
+
+# Async
+text = await pdfstract.convert_async('document.pdf', library='marker')
 ```
 
-#### Structured Conversion
+### Chunk
 
 ```python
-from pdfstract import PDFStract
+# Token-based chunking
+chunks = pdfstract.chunk(text, chunker='token', chunk_size=512, chunk_overlap=50)
 
-pdfstract = PDFStract()
+# Semantic chunking
+chunks = pdfstract.chunk(text, chunker='semantic', chunk_size=1024)
 
-# Convert with options
-result = pdfstract.convert(
-    pdf_path='document.pdf',
-    library='marker',
-    output_format='markdown'  # or 'json', 'text'
-)
-```
-
-#### Batch Processing Multiple PDFs
-
-```python
-from pdfstract import PDFStract
-
-pdfstract = PDFStract()
-
-# Convert all PDFs in a directory in parallel
-results = pdfstract.batch_convert(
-    pdf_directory='./pdfs',
-    library='pymupdf4llm',
-    output_format='markdown',
-    parallel_workers=4
-)
-
-print(f"✓ Success: {results['success']}")
-print(f"✗ Failed: {results['failed']}")
-```
-
-#### Async Conversion (for Web Apps)
-
-```python
-import asyncio
-from pdfstract import PDFStract
-
-async def process_pdfs():
-    pdfstract = PDFStract()
-    result = await pdfstract.convert_async(
-        'document.pdf',
-        library='docling',
-        output_format='json'
-    )
-    return result
-
-# Use in FastAPI, asyncio, etc.
-asyncio.run(process_pdfs())
-```
-
-#### Text Chunking for RAG Pipelines
-
-```python
-from pdfstract import PDFStract
-
-pdfstract = PDFStract()
-
-# 1. Extract PDF
-text = pdfstract.convert('document.pdf', library='docling')
-
-# 2. Chunk the text
-chunks = pdfstract.chunk(
-    text=text,
-    chunker='semantic',  # or 'token', 'sentence', 'code', etc.
-    chunk_size=512
-)
-
-print(f"Created {chunks['total_chunks']} chunks")
-
-# 3. Process chunks for embedding/indexing
+# Access results
 for chunk in chunks['chunks']:
-    print(f"- {chunk['text'][:50]}... ({chunk['token_count']} tokens)")
+    print(f"Chunk {chunk['chunk_id']}: {chunk['token_count']} tokens")
 ```
 
-### Powerful Web UI
+### Embed
 
 ```python
-# Clone the repository
+# Embed multiple texts
+vectors = pdfstract.embed_texts(["First text", "Second text"], model='sentence-transformers')
+
+# Embed single text
+vector = pdfstract.embed_text("Hello world", model='openai')
+
+# List available providers
+providers = pdfstract.list_available_embeddings()
+```
+
+### Combined Pipelines
+
+```python
+# Convert + Chunk
+result = pdfstract.convert_chunk('document.pdf', library='marker', chunker='semantic')
+
+# Convert + Chunk + Embed (full RAG pipeline)
+result = pdfstract.convert_chunk_embed(
+    'document.pdf',
+    library='docling',
+    chunker='semantic',
+    embedding='sentence-transformers'
+)
+
+# Each chunk has its embedding attached
+for chunk in result['chunking_result']['chunks']:
+    print(f"Chunk {chunk['chunk_id']}: {len(chunk['embedding'])} dimensions")
+```
+
+## CLI
+
+```bash
+# List available tools
+pdfstract libs
+pdfstract chunkers
+pdfstract embeddings-list
+
+# Extract
+pdfstract convert document.pdf --library marker
+
+# Chunk
+pdfstract convert-chunk document.pdf --library docling --chunker semantic
+
+# Full pipeline
+pdfstract convert-chunk-embed document.pdf --embedding sentence-transformers
+
+# Batch processing
+pdfstract batch ./pdfs --library pymupdf4llm --parallel 4
+
+# Compare libraries
+pdfstract compare sample.pdf -l marker -l docling -l pymupdf4llm
+```
+
+## Web UI
+
+```bash
 git clone https://github.com/aksarav/pdfstract.git
 cd pdfstract
-
-# Download models and start services (first time)
 make up
-
-# Or step by step:
-make models   # Download HuggingFace/MinerU models (~10GB)
-make build    # Build Docker images
-make up       # Start services
 ```
 
+Open http://localhost:3000 for Web UI, http://localhost:8000 for API.
 
 ![PDFStract UI](uploads/Sample1.png)
 
 ![PDFStract UI](uploads/Sample2.png)
 
+## What's Included
 
-## Used For
+| Tier | Libraries |
+|------|-----------|
+| **Base** | pymupdf4llm, markitdown |
+| **Standard** | + pytesseract, unstructured |
+| **Advanced** | + marker, docling, paddleocr, deepseek, mineru |
 
-- RAG systems
+**Chunkers:** token, sentence, semantic, recursive, code, sdpm, late, slumber, neural
+
+**Embeddings:** OpenAI, Azure OpenAI, Google, Ollama, Sentence Transformers, Model2Vec
+
+## Documentation
+
+📖 **[pdfstract.com](https://pdfstract.com)** — Full documentation, guides, and API reference
+
+## Use Cases
+
+- RAG systems and knowledge bases
 - Document intelligence pipelines
-- Knowledge base ingestion
-- LLM fine-tuning datasets
+- LLM fine-tuning dataset preparation
+- Semantic search applications
 
+## Contributing
 
-## 🤝 Contributing
+Contributions welcome! Fork, create a feature branch, and submit a pull request.
 
-Contributions are welcome! Please:
+## Support
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+Questions or issues? [Create an issue](https://github.com/aksarav/pdfstract/issues)
 
+---
 
-## 📞 Support
-
-If you encounter issues or have questions - please create an issue
-
-## 🌟 Please leave a star if you find this project useful
-
-
-**Made with ❤️ for AI RAG pipelines**
+**Made with ❤️ for AI RAG pipelines** · [GitHub](https://github.com/aksarav/pdfstract) · [PyPI](https://pypi.org/project/pdfstract)

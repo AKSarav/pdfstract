@@ -1,0 +1,162 @@
+%% PDFStract Embedding Layer - Class Diagram (C4 Level 4)
+%% Shows BaseEmbeddingsWrapper abstract base, 6 concrete provider wrappers,
+%% EmbeddingResult/EmbeddingsConfig, and EmbeddingsFactory
+
+classDiagram
+    class EmbeddingResult {
+        +text: str
+        +embedding: List~float~
+        +model: str
+        +dimension: int
+        +to_dict() Dict
+    }
+
+    class EmbeddingsConfig {
+        <<Interface>>
+        +provider: str
+        +model: str
+        +api_key: Optional~str~
+        +api_base: Optional~str~
+        +api_version: Optional~str~
+    }
+
+    class BaseEmbeddingsWrapper {
+        <<Abstract>>
+        #provider_name: str*
+        #available: bool*
+        #description: str
+        #embedding_dimension: int
+        #supported_languages: List~str~*
+        +embed(text, **kwargs)* EmbeddingResult
+        +embed_batch(texts, **kwargs)* List~EmbeddingResult~
+        +validate_credentials() bool*
+        +get_model_info() Dict*
+    }
+
+    class OpenAIEmbeddingsWrapper {
+        -_client: Optional~OpenAI~
+        -_async_client: Optional~AsyncOpenAI~
+        -_model: str
+        -_organization: Optional~str~
+        +provider_name: "openai"
+        +available: bool
+        +embedding_dimension: int
+        +embed(text, timeout) EmbeddingResult
+        +embed_batch(texts, timeout, show_progress) List~EmbeddingResult~
+        +embed_async(text, timeout) EmbeddingResult
+        +embed_batch_async(texts, timeout) List~EmbeddingResult~
+        +validate_credentials() bool
+        +get_model_info() Dict
+    }
+
+    class AzureOpenAIEmbeddingsWrapper {
+        -_client: Optional~AzureOpenAI~
+        -_async_client: Optional~AsyncAzureOpenAI~
+        -_model: str
+        -_deployment_name: str
+        +provider_name: "azure-openai"
+        +available: bool
+        +embedding_dimension: int
+        +embed(text, timeout) EmbeddingResult
+        +embed_batch(texts, timeout, show_progress) List~EmbeddingResult~
+        +embed_async(text, timeout) EmbeddingResult
+        +embed_batch_async(texts, timeout) List~EmbeddingResult~
+        +validate_credentials() bool
+        +get_model_info() Dict
+    }
+
+    class GoogleEmbeddingsWrapper {
+        -_client: Optional~genai.Client~
+        -_model: str
+        +provider_name: "google"
+        +available: bool
+        +embedding_dimension: int
+        +embed(text, timeout) EmbeddingResult
+        +embed_batch(texts, timeout, show_progress) List~EmbeddingResult~
+        +validate_credentials() bool
+        +get_model_info() Dict
+    }
+
+    class OllamaEmbeddingsWrapper {
+        -_client: Optional~requests.Session~
+        -_model: str
+        -_base_url: str
+        +provider_name: "ollama"
+        +available: bool
+        +embedding_dimension: int
+        +embed(text, timeout) EmbeddingResult
+        +embed_batch(texts, timeout, show_progress) List~EmbeddingResult~
+        +validate_credentials() bool
+        +get_model_info() Dict
+    }
+
+    class SentenceTransformersEmbeddingsWrapper {
+        -_model: Optional~SentenceTransformer~
+        -_model_name: str
+        -_device: str
+        +provider_name: "sentence-transformers"
+        +available: bool
+        +embedding_dimension: int
+        +embed(text) EmbeddingResult
+        +embed_batch(texts, batch_size, show_progress) List~EmbeddingResult~
+        +validate_credentials() bool
+        +get_model_info() Dict
+    }
+
+    class Model2VecEmbeddingsWrapper {
+        -_model: Optional~Model2Vec~
+        -_model_name: str
+        +provider_name: "model2vec"
+        +available: bool
+        +embedding_dimension: int
+        +embed(text) EmbeddingResult
+        +embed_batch(texts, show_progress) List~EmbeddingResult~
+        +validate_credentials() bool
+        +get_model_info() Dict
+    }
+
+    class EmbeddingProvider {
+        <<Enumeration>>
+        OPENAI = "openai"
+        AZURE_OPENAI = "azure-openai"
+        GOOGLE = "google"
+        OLLAMA = "ollama"
+        SENTENCE_TRANSFORMERS = "sentence-transformers"
+        MODEL2VEC = "model2vec"
+    }
+
+    class EmbeddingsFactory {
+        -_wrappers: Dict~str, Type~BaseEmbeddingsWrapper~~
+        -_instances: Dict~str, BaseEmbeddingsWrapper~
+        +get_embeddings_wrapper(provider: str, **kwargs) BaseEmbeddingsWrapper
+        +list_available_providers() List~str~
+        +list_all_providers() List~Dict~
+        +embed(provider, text, **kwargs)* EmbeddingResult
+        +embed_batch(provider, texts, **kwargs)* List~EmbeddingResult~
+        +validate_provider_config(provider, **kwargs) bool
+        +get_provider_info(provider) Dict
+        +get_default_provider() str
+    }
+
+    class get_embeddings_factory {
+        <<Function>>
+        -_factory: Optional~EmbeddingsFactory~
+        +get_embeddings_factory()$ EmbeddingsFactory
+    }
+
+    %% Relationships
+    BaseEmbeddingsWrapper --> EmbeddingResult : "produces"
+    BaseEmbeddingsWrapper --> EmbeddingProvider : "uses"
+    BaseEmbeddingsWrapper --> EmbeddingsConfig : "configures from"
+
+    BaseEmbeddingsWrapper <|-- OpenAIEmbeddingsWrapper
+    BaseEmbeddingsWrapper <|-- AzureOpenAIEmbeddingsWrapper
+    BaseEmbeddingsWrapper <|-- GoogleEmbeddingsWrapper
+    BaseEmbeddingsWrapper <|-- OllamaEmbeddingsWrapper
+    BaseEmbeddingsWrapper <|-- SentenceTransformersEmbeddingsWrapper
+    BaseEmbeddingsWrapper <|-- Model2VecEmbeddingsWrapper
+
+    EmbeddingsFactory --> BaseEmbeddingsWrapper : "manages 6 providers"
+    EmbeddingsFactory --> EmbeddingResult : "returns"
+    EmbeddingsFactory --> EmbeddingProvider : "uses"
+    get_embeddings_factory --> EmbeddingsFactory : "returns singleton"

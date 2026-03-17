@@ -52,10 +52,10 @@ print(f"Converted PDF to {chunks['total_chunks']} chunks")
 Convert PDFs to text using various libraries:
 
 ```python
-# Basic conversion
-text = pdfstract.convert('document.pdf')
+# Auto mode (selects best available library)
+text = pdfstract.convert('document.pdf', library='auto')
 
-# With specific library
+# Explicit library selection
 text = pdfstract.convert('document.pdf', library='marker')
 
 # With options
@@ -67,7 +67,8 @@ text = pdfstract.convert('document.pdf',
 
 **Parameters:**
 - `file_path` (str): Path to PDF file
-- `library` (str): Conversion library ('docling', 'marker', 'pymupdf4llm', etc.)
+- `library` (str, **required**): Conversion library ('auto', 'docling', 'marker', 'pymupdf4llm', etc.)
+  - Use `library='auto'` to automatically select the best available library
 - `preserve_structure` (bool): Keep document structure
 - `extract_images` (bool): Extract embedded images
 - `pages` (list): Specific pages to convert
@@ -75,15 +76,27 @@ text = pdfstract.convert('document.pdf',
 
 **Returns:** Extracted text as string
 
+:::info Auto Selection Priority
+When using `library='auto'`, libraries are selected in this order:
+1. pymupdf4llm (fastest)
+2. markitdown (balanced)
+3. marker (high quality)
+4. docling (document intelligence)
+5. paddleocr, unstructured, pytesseract (if installed)
+:::
+
 ### chunk()
 
 Split text into chunks for RAG applications:
 
 ```python
-# Basic chunking
-chunks = pdfstract.chunk(text)
+# Auto mode (selects best available chunker)
+chunks = pdfstract.chunk(text, chunker='auto')
 
-# Semantic chunking
+# Explicit chunker selection
+chunks = pdfstract.chunk(text, chunker='semantic')
+
+# With full options
 chunks = pdfstract.chunk(text, 
                         chunker='semantic',
                         chunk_size=1024,
@@ -97,7 +110,8 @@ chunks = pdfstract.chunk(code_text,
 
 **Parameters:**
 - `text` (str): Text to chunk
-- `chunker` (str): Chunking method ('token', 'semantic', 'recursive', etc.)
+- `chunker` (str, **required**): Chunking method ('auto', 'token', 'semantic', 'recursive', etc.)
+  - Use `chunker='auto'` to automatically select the best available chunker
 - `chunk_size` (int): Target chunk size in tokens
 - `chunk_overlap` (int): Overlap between chunks
 - `**kwargs`: Chunker-specific options
@@ -164,39 +178,121 @@ info = pdfstract.get_chunker_info('semantic')
 print(f"Semantic chunker: {info}")
 ```
 
-## Convenience Functions
+### embed_text() / embed_texts()
 
-PDFStract also provides standalone functions for quick operations:
-
-### PDF Conversion Functions
+Generate vector embeddings for text using pluggable providers.
 
 ```python
-from pdfstract import (
-    convert_with_docling,
-    convert_with_marker, 
-    convert_with_pymupdf4llm,
-    convert_with_unstructured
-)
+from pdfstract import PDFStract
 
-# Use specific converters directly
-text = convert_with_marker('document.pdf')
-text = convert_with_docling('document.pdf', extract_images=True)
+pdfstract = PDFStract()
+
+# Embed multiple texts
+vectors = pdfstract.embed_texts(["First sentence.", "Second sentence."], model='auto')
+print(f"Dimension: {len(vectors[0])}")
+
+# Embed single text
+vector = pdfstract.embed_text("Hello world", model='sentence-transformers')
 ```
 
-### Chunking Functions
+**Parameters:**
+- `text` / `texts` (str / List[str]): Text(s) to embed
+- `model` (str): Provider name or `'auto'` to select best available
+
+**Available Providers:**
+
+| Provider | Dimensions | Requirements |
+|----------|------------|--------------|
+| `openai` | 1536/3072 | `OPENAI_API_KEY` |
+| `azure-openai` | 1536/3072 | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` |
+| `google-generative` | 768 | `GOOGLE_API_KEY` |
+| `ollama` | Varies | Local Ollama daemon |
+| `sentence-transformers` | 384/768 | No API key needed |
+| `model2vec` | Varies | `MODEL2VEC_PATH` |
+
+**Returns:** List of float vectors (one per input text)
+
+:::tip Local Embeddings
+Use `model='sentence-transformers'` for free, local embeddings with no setup required!
+:::
+
+### list_available_embeddings()
+
+List available embedding providers:
 
 ```python
-from pdfstract import (
-    chunk_by_tokens,
-    chunk_semantically,
-    chunk_recursively,
-    chunk_by_sentences
+available = pdfstract.list_available_embeddings()
+print(f"Available: {available}")
+```
+
+### convert_chunk_embed()
+
+Complete RAG pipeline: convert PDF, chunk text, and generate embeddings in one call.
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+result = pdfstract.convert_chunk_embed(
+    'document.pdf',
+    library='marker',           # PDF converter
+    chunker='semantic',         # Chunking method
+    embedding='sentence-transformers',  # Embedding provider
+    output_format='markdown',
+    chunker_params={'chunk_size': 512, 'chunk_overlap': 50}
 )
 
-# Use specific chunkers directly
-chunks = chunk_semantically(text, chunk_size=512)
-chunks = chunk_by_tokens(text, chunk_size=1024, overlap=100)
+# Access results
+print(f"Extracted: {len(result['extracted_content'])} chars")
+print(f"Chunks: {result['chunking_result']['total_chunks']}")
+print(f"Embeddings: {len(result['embeddings'])} vectors")
+
+# Each chunk has its embedding attached
+for chunk in result['chunking_result']['chunks']:
+    print(f"Chunk {chunk['chunk_id']}: {len(chunk['embedding'])} dims")
 ```
+
+**Parameters:**
+- `pdf_path` (str): Path to PDF file
+- `library` (str): Extraction library ('auto', 'marker', 'docling', etc.)
+- `chunker` (str): Chunking method ('auto', 'token', 'semantic', etc.)
+- `embedding` (str): Embedding provider ('auto', 'openai', 'sentence-transformers', etc.)
+- `output_format` (str): Output format for extraction (default: 'markdown')
+- `chunker_params` (dict): Optional chunker parameters (chunk_size, chunk_overlap, etc.)
+
+**Returns:** Dictionary with:
+- `extracted_content`: Raw extracted text
+- `chunking_result`: Chunking results with chunks list
+- `embeddings`: List of embedding vectors
+
+### Async Variants
+
+All embedding methods have async variants:
+
+```python
+import asyncio
+
+async def process():
+    pdfstract = PDFStract()
+    
+    # Async embedding
+    vectors = await pdfstract.embed_texts_async(texts, model='openai')
+    
+    # Async full pipeline
+    result = await pdfstract.convert_chunk_embed_async(
+        'document.pdf',
+        library='marker',
+        chunker='semantic',
+        embedding='openai'
+    )
+    
+    return result
+
+result = asyncio.run(process())
+```
+
+Use a single `PDFStract()` instance for all operations. Instantiate once and reuse.
 
 ## Error Handling
 
@@ -296,6 +392,12 @@ chunks = pdfstract.chunk(text, chunker='semantic')
 
 Continue exploring PDFStract:
 
+### Feature Guides
+- **[Extract](../features/extract)** - All PDF conversion options
+- **[Chunk](../features/chunk)** - Text chunking methods
+- **[Embed](../features/embed)** - Embedding providers and configuration
+
+### Interface Guides
 - **[Quick Start](../quick-start)** - Get started quickly
 - **[CLI Guide](../cli/overview)** - Command-line interface
 - **[Web UI](../web-ui/overview)** - Visual interface

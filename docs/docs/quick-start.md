@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Quick Start
 
-Get up and running with PDFStract in just a few minutes! This guide will help you convert your first PDF and create chunks ready for RAG applications.
+Get up and running with PDFStract in just a few minutes! This guide covers the complete data preparation pipeline — Extract, Chunk, and Embed — to get your PDFs ready for RAG.
 
 ## Prerequisites
 
@@ -54,25 +54,115 @@ from pdfstract import PDFStract
 # Initialize PDFStract
 pdfstract = PDFStract()
 
-# Convert PDF to text
-text = pdfstract.convert('your-document.pdf')
+# Convert PDF to text (use 'auto' to select best available library)
+text = pdfstract.convert('your-document.pdf', library='auto')
 
 print("Extracted text:")
 print(text[:500] + "...")  # Show first 500 characters
 ```
+
+:::tip Auto Mode
+Set `library='auto'` to automatically select the best available converter based on priority: `pymupdf4llm` → `markitdown` → `marker` → `docling` → etc. This ensures your code works regardless of which tier you installed!
+:::
 
 ## Create Your First Chunks
 
 Now let's chunk that text for RAG applications:
 
 ```python
-# Chunk the text for RAG
-chunks = pdfstract.chunk(text, chunk_size=512, chunk_overlap=50)
+# Chunk the text for RAG (use 'auto' to select best available chunker)
+chunks = pdfstract.chunk(text, chunker='auto', chunk_size=512, chunk_overlap=50)
 
 print(f"Created {chunks['total_chunks']} chunks")
 print("First chunk:")
 print(chunks['chunks'][0]['text'][:200] + "...")
 ```
+
+:::tip Auto Mode for Chunking
+Set `chunker='auto'` to automatically select the best available method (typically `token` chunker). For semantic chunking, explicitly specify `chunker='semantic'`.
+:::
+
+## Generate Embeddings
+
+PDFStract supports multiple embedding providers for vector search and RAG pipelines.
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+# Embed multiple texts
+vectors = pdfstract.embed_texts(["First sentence", "Second sentence"], model='auto')
+print(f"Dimension: {len(vectors[0])}")
+
+# Embed single text
+vector = pdfstract.embed_text("Hello world", model='sentence-transformers')
+```
+
+### Available Providers
+
+| Provider | Type | Setup |
+|----------|------|-------|
+| `sentence-transformers` | Local | No setup needed |
+| `openai` | Cloud | `OPENAI_API_KEY` |
+| `azure-openai` | Cloud | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_ENDPOINT` |
+| `google-generative` | Cloud | `GOOGLE_API_KEY` |
+| `ollama` | Local | Local Ollama daemon |
+
+:::tip Local Embeddings
+Use `model='sentence-transformers'` for free, local embeddings with no API key required!
+:::
+
+## Complete RAG Pipeline
+
+Combine all three steps (extract, chunk, embed) in one call:
+
+### Python API
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+# Convert + Chunk + Embed in one step
+result = pdfstract.convert_chunk_embed(
+    'document.pdf',
+    library='marker',
+    chunker='semantic',
+    embedding='sentence-transformers',
+    chunker_params={'chunk_size': 512}
+)
+
+print(f"Chunks: {result['chunking_result']['total_chunks']}")
+print(f"Embeddings: {len(result['embeddings'])} vectors")
+
+# Each chunk has its embedding attached
+for chunk in result['chunking_result']['chunks']:
+    print(f"Chunk {chunk['chunk_id']}: {len(chunk['embedding'])} dimensions")
+```
+
+### CLI
+
+```bash
+# Full pipeline with auto-selection
+pdfstract convert-chunk-embed document.pdf
+
+# With specific options
+pdfstract convert-chunk-embed document.pdf \
+  --library marker \
+  --chunker semantic \
+  --embedding sentence-transformers \
+  --chunk-size 512 \
+  --output result.json
+
+# Using OpenAI embeddings (requires OPENAI_API_KEY)
+pdfstract convert-chunk-embed document.pdf \
+  --library docling \
+  --embedding openai \
+  --output chunks_with_vectors.json
+```
+
+The output JSON contains extracted text, chunks, and embedding vectors ready for your vector database.
 
 ## Available Libraries by Tier
 
@@ -130,10 +220,16 @@ pdfstract batch ./pdfs/ --output ./results/
 
 Now that you have the basics down, explore more advanced features:
 
-- **[Installation Guide](installation)** - Advanced installation options
-- **[Python Module](api/overview)** - Complete module reference
+### Feature Guides
+- **[Extract](features/extract)** - All PDF conversion options and libraries
+- **[Chunk](features/chunk)** - Text chunking methods and parameters
+- **[Embed](features/embed)** - Embedding providers and configuration
+
+### Interface Guides
+- **[Python API](api/overview)** - Complete module reference
 - **[CLI Guide](cli/overview)** - Full command-line interface
 - **[Web UI](web-ui/overview)** - Using the visual interface
+- **[Installation Guide](installation)** - Advanced installation options
 
 ## Common Use Cases
 

@@ -4,16 +4,20 @@ sidebar_position: 1
 
 # PDFStract Documentation
 
-Welcome to **PDFStract** — the first layer in your RAG pipeline! PDFStract is a comprehensive tool for converting PDFs into structured, chunked content ready for AI applications.
+Welcome to **PDFStract** — the data preparation layer for RAG. Extract. Chunk. Embed.
+
+PDFStract is a comprehensive tool for converting PDFs into vector-ready content for AI applications.
+
+**One unified API.** Switch between 10+ extraction libraries, 10+ chunking methods, and multiple embedding providers with a single parameter change. Focus on your RAG outcomes, not library dependencies.
 
 ## What is PDFStract?
 
-PDFStract is designed to get your PDFs ready for AI by providing:
+PDFStract handles the complete data preparation pipeline for RAG:
 
-- ✅ **Extract**: Convert PDFs using 10+ libraries (Marker, Docling, PyMuPDF4LLM, Unstructured, PaddleOCR, and more)
-- ✅ **Chunk**: Split text into smaller segments using 10+ methods (Token, Semantic, Recursive, Code-aware, and more)  
-- ✅ **Embed**: Prepare chunks for embedding models and vector databases
-- ✅ **Multiple Interfaces**: Use as Python library, CLI tool, or Web UI
+- **Extract**: Convert PDFs using 10+ libraries (Marker, Docling, PyMuPDF4LLM, Unstructured, PaddleOCR, and more)
+- **Chunk**: Split text into optimal segments using 10+ methods (Token, Semantic, Recursive, Code-aware, and more)  
+- **Embed**: Generate vector embeddings with multiple providers (OpenAI, Sentence Transformers, Ollama, and more)
+- **Multiple Interfaces**: Use as Python library, CLI tool, or Web UI
 
 ## Key Features
 
@@ -37,8 +41,23 @@ text = pdfstract.convert('document.pdf', library='docling')
 # 2. Chunk for RAG
 chunks = pdfstract.chunk(text, chunker='semantic', chunk_size=512)
 
-# 3. Use chunks in your pipeline
-print(f"Ready for embedding: {chunks['total_chunks']} chunks")
+# 3. Generate embeddings
+vectors = pdfstract.embed_texts([c['text'] for c in chunks['chunks']], model='auto')
+
+print(f"Ready for vector DB: {len(vectors)} embeddings")
+```
+
+Or use the all-in-one pipeline:
+
+```python
+# Complete RAG pipeline in one call
+result = pdfstract.convert_chunk_embed(
+    'document.pdf',
+    library='marker',
+    chunker='semantic',
+    embedding='sentence-transformers'
+)
+# Each chunk now has an embedding attached!
 ```
 
 ## Installation Tiers
@@ -71,8 +90,17 @@ pip install pdfstract[all]
 Ready to dive in? Here are some great starting points:
 
 - **[Quick Start Guide](quick-start)** - Get up and running in 5 minutes
-- **[Installation](installation)** - Install PDFStract in your environment  
-- **[Python Module](api/overview)** - Integrate into your applications
+- **[Installation](installation)** - Install PDFStract in your environment
+
+### Core Features
+
+- **[Extract](features/extract)** - PDF conversion with 10+ libraries
+- **[Chunk](features/chunk)** - Text splitting with 10+ methods
+- **[Embed](features/embed)** - Vector embeddings with multiple providers
+
+### Interfaces
+
+- **[Python API](api/overview)** - Integrate into your applications
 - **[CLI Guide](cli/overview)** - Use from the command line
 - **[Web UI](web-ui/overview)** - Try the visual interface
 
