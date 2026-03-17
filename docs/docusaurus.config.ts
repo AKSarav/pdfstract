@@ -6,7 +6,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'PDFStract',
-  tagline: 'The First Layer in Your RAG Pipeline',
+  tagline: 'The Data Preparation Layer for RAG — Extract. Chunk. Embed.',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -85,7 +85,7 @@ const config: Config = {
       style: 'light',
       links: [
         {
-          title: 'Documentation',
+          title: 'Getting Started',
           items: [
             {
               label: 'Quick Start',
@@ -95,8 +95,30 @@ const config: Config = {
               label: 'Installation',
               to: '/installation',
             },
+          ],
+        },
+        {
+          title: 'Features',
+          items: [
             {
-              label: 'Module Reference',
+              label: 'Extract (PDF Conversion)',
+              to: '/features/extract',
+            },
+            {
+              label: 'Chunk (Text Splitting)',
+              to: '/features/chunk',
+            },
+            {
+              label: 'Embed (Vector Embeddings)',
+              to: '/features/embed',
+            },
+          ],
+        },
+        {
+          title: 'Interfaces',
+          items: [
+            {
+              label: 'Python API',
               to: '/api/overview',
             },
             {

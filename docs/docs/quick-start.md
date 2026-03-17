@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Quick Start
 
-Get up and running with PDFStract in just a few minutes! This guide will help you convert your first PDF and create chunks ready for RAG applications.
+Get up and running with PDFStract in just a few minutes! This guide covers the complete data preparation pipeline — Extract, Chunk, and Embed — to get your PDFs ready for RAG.
 
 ## Prerequisites
 
@@ -84,21 +84,85 @@ Set `chunker='auto'` to automatically select the best available method (typicall
 
 ## Generate Embeddings
 
-PDFStract can produce vector embeddings using multiple providers. Embeddings are useful for indexing, semantic search, and RAG pipelines.
+PDFStract supports multiple embedding providers for vector search and RAG pipelines.
 
 ```python
 from pdfstract import PDFStract
 
-pdf = PDFStract()
-vecs = pdf.embed_texts(["First sentence", "Second sentence"], model='auto')
-print(len(vecs[0]))
-e = pdf.embed_text("Hello world", model='sentence-transformers')
+pdfstract = PDFStract()
+
+# Embed multiple texts
+vectors = pdfstract.embed_texts(["First sentence", "Second sentence"], model='auto')
+print(f"Dimension: {len(vectors[0])}")
+
+# Embed single text
+vector = pdfstract.embed_text("Hello world", model='sentence-transformers')
 ```
 
-Notes:
-- For OpenAI/Azure/Google you must set appropriate environment variables (e.g. `OPENAI_API_KEY`, `AZURE_OPENAI_KEY`, `GOOGLE_API_KEY`).
-- For Ollama, ensure a local Ollama daemon is running (`OLLAMA_HOST`) and set `OLLAMA_MODEL` if needed.
-- Use `model='auto'` to allow PDFStract to pick the best available provider.
+### Available Providers
+
+| Provider | Type | Setup |
+|----------|------|-------|
+| `sentence-transformers` | Local | No setup needed |
+| `openai` | Cloud | `OPENAI_API_KEY` |
+| `azure-openai` | Cloud | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_ENDPOINT` |
+| `google-generative` | Cloud | `GOOGLE_API_KEY` |
+| `ollama` | Local | Local Ollama daemon |
+
+:::tip Local Embeddings
+Use `model='sentence-transformers'` for free, local embeddings with no API key required!
+:::
+
+## Complete RAG Pipeline
+
+Combine all three steps (extract, chunk, embed) in one call:
+
+### Python API
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+# Convert + Chunk + Embed in one step
+result = pdfstract.convert_chunk_embed(
+    'document.pdf',
+    library='marker',
+    chunker='semantic',
+    embedding='sentence-transformers',
+    chunker_params={'chunk_size': 512}
+)
+
+print(f"Chunks: {result['chunking_result']['total_chunks']}")
+print(f"Embeddings: {len(result['embeddings'])} vectors")
+
+# Each chunk has its embedding attached
+for chunk in result['chunking_result']['chunks']:
+    print(f"Chunk {chunk['chunk_id']}: {len(chunk['embedding'])} dimensions")
+```
+
+### CLI
+
+```bash
+# Full pipeline with auto-selection
+pdfstract convert-chunk-embed document.pdf
+
+# With specific options
+pdfstract convert-chunk-embed document.pdf \
+  --library marker \
+  --chunker semantic \
+  --embedding sentence-transformers \
+  --chunk-size 512 \
+  --output result.json
+
+# Using OpenAI embeddings (requires OPENAI_API_KEY)
+pdfstract convert-chunk-embed document.pdf \
+  --library docling \
+  --embedding openai \
+  --output chunks_with_vectors.json
+```
+
+The output JSON contains extracted text, chunks, and embedding vectors ready for your vector database.
 
 ## Available Libraries by Tier
 
@@ -156,10 +220,16 @@ pdfstract batch ./pdfs/ --output ./results/
 
 Now that you have the basics down, explore more advanced features:
 
-- **[Installation Guide](installation)** - Advanced installation options
-- **[Python Module](api/overview)** - Complete module reference
+### Feature Guides
+- **[Extract](features/extract)** - All PDF conversion options and libraries
+- **[Chunk](features/chunk)** - Text chunking methods and parameters
+- **[Embed](features/embed)** - Embedding providers and configuration
+
+### Interface Guides
+- **[Python API](api/overview)** - Complete module reference
 - **[CLI Guide](cli/overview)** - Full command-line interface
 - **[Web UI](web-ui/overview)** - Using the visual interface
+- **[Installation Guide](installation)** - Advanced installation options
 
 ## Common Use Cases
 

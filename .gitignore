@@ -18,3 +18,4 @@ results/
 uv.lock
 test.ipynb
 notebooks/
+.github/

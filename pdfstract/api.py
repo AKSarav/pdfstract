@@ -445,6 +445,19 @@ class PDFStract:
         all_libs = self.list_libraries()
         return next((lib for lib in all_libs if lib["name"] == library), None)
 
+    def get_converter_status(self, library: str) -> Optional[Dict[str, Any]]:
+        """Get detailed status for a converter (for REST /libraries/{name}/status)."""
+        return self._factory.get_converter_status(library)
+
+    async def prepare_converter_async(self, library: str) -> Dict[str, Any]:
+        """Prepare a converter by downloading its models (async). Returns dict with success, message/error."""
+        return await self._factory.prepare_converter(library)
+
+    def prepare_converter(self, library: str) -> Dict[str, Any]:
+        """Prepare a converter by downloading its models (sync). Returns dict with success, message/error."""
+        import asyncio
+        return asyncio.run(self.prepare_converter_async(library))
+
     async def convert_chunk_async(
         self,
         pdf_path: Union[str, Path],

@@ -1,0 +1,182 @@
+%% PDFStract Converter Layer - Class Diagram (C4 Level 4)
+%% Shows PDFConverter abstract base class, concrete implementations,
+%% output format/status enums, and factory classes
+
+classDiagram
+    class OutputFormat {
+        <<Enumeration>>
+        MARKDOWN = "markdown"
+        JSON = "json"
+        PYMUPDF = "pymupdf"
+        TEXT = "text"
+    }
+
+    class DownloadStatus {
+        <<Enumeration>>
+        SUCCESS = "success"
+        FAILED = "failed"
+        PARTIAL = "partial"
+    }
+
+    class PDFConverter {
+        <<Abstract>>
+        #name: str*
+        #available: bool*
+        #output_formats: List~str~*
+        #supports_ocr: bool
+        #description: str
+        +convert(pdf_path: str, **kwargs)* str
+        +download_model(**kwargs)* DownloadStatus
+        +validate_installation() bool*
+        +get_info() Dict*
+    }
+
+    class PyMuPDF4LLMConverter {
+        +name: "pymupdf4llm"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: false
+        +convert(pdf_path, **kwargs) str
+        +download_model() DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class MarkerConverter {
+        -_model_cache: Optional
+        +name: "marker"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: false
+        +convert(pdf_path, device_map, batch_size) str
+        +download_model(device_map, batch_size) DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class DoclingConverter {
+        -_converter_cache: Optional
+        +name: "docling"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: true
+        +convert(pdf_path, max_pages) str
+        +download_model() DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class PaddleOCRConverter {
+        -_ocr_cache: Optional
+        +name: "paddleocr"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: true
+        +convert(pdf_path, lang, device) str
+        +download_model(device, lang) DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class DeepSeekOCRConverter {
+        -_model_cache: Optional
+        +name: "deepseek"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: true
+        +convert(pdf_path, lang, detection_model) str
+        +download_model(detection_model) DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class PytesseractConverter {
+        +name: "pytesseract"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: true
+        +convert(pdf_path, lang) str
+        +download_model(lang) DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class UnstructuredConverter {
+        +name: "unstructured"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: true
+        +convert(pdf_path, strategy) str
+        +download_model() DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class MarkItDownConverter {
+        +name: "markitdown"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: false
+        +convert(pdf_path) str
+        +download_model() DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class MinerUConverter {
+        -_mineru_path: str
+        +name: "mineru"
+        +available: bool
+        +output_formats: List~str~
+        +supports_ocr: true
+        +convert(pdf_path, device_id, backend) str
+        +download_model(backend) DownloadStatus
+        +validate_installation() bool
+        +get_info() Dict
+    }
+
+    class CLILazyFactory {
+        <<Factory>>
+        -_converters: Dict~str, PDFConverter~
+        +get_converter(name: str) PDFConverter
+        +list_converters() List~str~
+        +get_default_converter() PDFConverter
+    }
+
+    class OCRFactory {
+        <<Factory>>
+        -_ocr_converters: Dict~str, PDFConverter~
+        +get_ocr_converter(name: str) PDFConverter
+        +list_ocr_converters() List~str~
+        +prepare_ocr_models(converters: List) DownloadStatus
+    }
+
+    %% Inheritance
+    PDFConverter <|-- PyMuPDF4LLMConverter
+    PDFConverter <|-- MarkerConverter
+    PDFConverter <|-- DoclingConverter
+    PDFConverter <|-- PaddleOCRConverter
+    PDFConverter <|-- DeepSeekOCRConverter
+    PDFConverter <|-- PytesseractConverter
+    PDFConverter <|-- UnstructuredConverter
+    PDFConverter <|-- MarkItDownConverter
+    PDFConverter <|-- MinerUConverter
+
+    %% Composition / Usage
+    PDFConverter --> OutputFormat : "uses"
+    PDFConverter --> DownloadStatus : "uses"
+    CLILazyFactory --> PyMuPDF4LLMConverter : "manages"
+    CLILazyFactory --> MarkerConverter : "manages"
+    CLILazyFactory --> DoclingConverter : "manages"
+    CLILazyFactory --> PaddleOCRConverter : "manages"
+    CLILazyFactory --> DeepSeekOCRConverter : "manages"
+    CLILazyFactory --> PytesseractConverter : "manages"
+    CLILazyFactory --> UnstructuredConverter : "manages"
+    CLILazyFactory --> MarkItDownConverter : "manages"
+    CLILazyFactory --> MinerUConverter : "manages"
+
+    OCRFactory --> PaddleOCRConverter : "manages OCR"
+    OCRFactory --> DeepSeekOCRConverter : "manages OCR"
+    OCRFactory --> PytesseractConverter : "manages OCR"
+    OCRFactory --> MinerUConverter : "manages OCR"
+    OCRFactory --> DoclingConverter : "manages OCR-capable"

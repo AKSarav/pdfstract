@@ -178,30 +178,121 @@ info = pdfstract.get_chunker_info('semantic')
 print(f"Semantic chunker: {info}")
 ```
 
-### embeddings
+### embed_text() / embed_texts()
 
 Generate vector embeddings for text using pluggable providers.
 
 ```python
 from pdfstract import PDFStract
 
-pdf = PDFStract()
-# Sync
-vecs = pdf.embed_texts(["First sentence.", "Second sentence."], model='auto')
-print(len(vecs[0]))  # embedding dimension
-# Or single text
-e = pdf.embed_text("Hello world", model='sentence-transformers')
+pdfstract = PDFStract()
+
+# Embed multiple texts
+vectors = pdfstract.embed_texts(["First sentence.", "Second sentence."], model='auto')
+print(f"Dimension: {len(vectors[0])}")
+
+# Embed single text
+vector = pdfstract.embed_text("Hello world", model='sentence-transformers')
 ```
 
-Parameters:
-- `texts` (List[str]): List of strings to embed
-- `model` (str): Provider name (`openai`, `azure-openai`, `google-generative`, `ollama`, `sentence-transformers`, `model2vec`) or `'auto'` to select the default provider
+**Parameters:**
+- `text` / `texts` (str / List[str]): Text(s) to embed
+- `model` (str): Provider name or `'auto'` to select best available
 
-Notes:
-- Credentials are validated internally and a clear error is raised if required environment variables are missing.
-- For hosted providers set `OPENAI_API_KEY`, `AZURE_OPENAI_KEY`, `GOOGLE_API_KEY`, etc. For Ollama, ensure a local Ollama daemon is running.
+**Available Providers:**
 
-Use a single `PDFStract()` instance for all operations: `pdfstract.convert(...)`, `pdfstract.chunk_text(...)`, `pdfstract.embed_texts(...)`, etc. Instantiate once and reuse.
+| Provider | Dimensions | Requirements |
+|----------|------------|--------------|
+| `openai` | 1536/3072 | `OPENAI_API_KEY` |
+| `azure-openai` | 1536/3072 | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` |
+| `google-generative` | 768 | `GOOGLE_API_KEY` |
+| `ollama` | Varies | Local Ollama daemon |
+| `sentence-transformers` | 384/768 | No API key needed |
+| `model2vec` | Varies | `MODEL2VEC_PATH` |
+
+**Returns:** List of float vectors (one per input text)
+
+:::tip Local Embeddings
+Use `model='sentence-transformers'` for free, local embeddings with no setup required!
+:::
+
+### list_available_embeddings()
+
+List available embedding providers:
+
+```python
+available = pdfstract.list_available_embeddings()
+print(f"Available: {available}")
+```
+
+### convert_chunk_embed()
+
+Complete RAG pipeline: convert PDF, chunk text, and generate embeddings in one call.
+
+```python
+from pdfstract import PDFStract
+
+pdfstract = PDFStract()
+
+result = pdfstract.convert_chunk_embed(
+    'document.pdf',
+    library='marker',           # PDF converter
+    chunker='semantic',         # Chunking method
+    embedding='sentence-transformers',  # Embedding provider
+    output_format='markdown',
+    chunker_params={'chunk_size': 512, 'chunk_overlap': 50}
+)
+
+# Access results
+print(f"Extracted: {len(result['extracted_content'])} chars")
+print(f"Chunks: {result['chunking_result']['total_chunks']}")
+print(f"Embeddings: {len(result['embeddings'])} vectors")
+
+# Each chunk has its embedding attached
+for chunk in result['chunking_result']['chunks']:
+    print(f"Chunk {chunk['chunk_id']}: {len(chunk['embedding'])} dims")
+```
+
+**Parameters:**
+- `pdf_path` (str): Path to PDF file
+- `library` (str): Extraction library ('auto', 'marker', 'docling', etc.)
+- `chunker` (str): Chunking method ('auto', 'token', 'semantic', etc.)
+- `embedding` (str): Embedding provider ('auto', 'openai', 'sentence-transformers', etc.)
+- `output_format` (str): Output format for extraction (default: 'markdown')
+- `chunker_params` (dict): Optional chunker parameters (chunk_size, chunk_overlap, etc.)
+
+**Returns:** Dictionary with:
+- `extracted_content`: Raw extracted text
+- `chunking_result`: Chunking results with chunks list
+- `embeddings`: List of embedding vectors
+
+### Async Variants
+
+All embedding methods have async variants:
+
+```python
+import asyncio
+
+async def process():
+    pdfstract = PDFStract()
+    
+    # Async embedding
+    vectors = await pdfstract.embed_texts_async(texts, model='openai')
+    
+    # Async full pipeline
+    result = await pdfstract.convert_chunk_embed_async(
+        'document.pdf',
+        library='marker',
+        chunker='semantic',
+        embedding='openai'
+    )
+    
+    return result
+
+result = asyncio.run(process())
+```
+
+Use a single `PDFStract()` instance for all operations. Instantiate once and reuse.
 
 ## Error Handling
 
@@ -301,6 +392,12 @@ chunks = pdfstract.chunk(text, chunker='semantic')
 
 Continue exploring PDFStract:
 
+### Feature Guides
+- **[Extract](../features/extract)** - All PDF conversion options
+- **[Chunk](../features/chunk)** - Text chunking methods
+- **[Embed](../features/embed)** - Embedding providers and configuration
+
+### Interface Guides
 - **[Quick Start](../quick-start)** - Get started quickly
 - **[CLI Guide](../cli/overview)** - Command-line interface
 - **[Web UI](../web-ui/overview)** - Visual interface

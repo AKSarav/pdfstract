@@ -27,11 +27,8 @@ pip install pdfstract[all]
 After installation, use PDFStract from the command line:
 
 ```bash
-# Check version
-pdfstract --version
-
-# Get help
-pdfstract --help
+# Complete RAG pipeline in one command: Extract + Chunk + Embed
+pdfstract convert-chunk-embed document.pdf --library auto --chunker auto --embedding auto
 
 # Convert a single PDF
 pdfstract convert document.pdf
@@ -42,6 +39,10 @@ pdfstract convert document.pdf --library marker
 # Batch process multiple files
 pdfstract batch ./pdfs/ --output ./results/
 ```
+
+:::tip One Command RAG Pipeline
+Use `convert-chunk-embed` to extract text, chunk it, and generate embeddings in a single command—ready for your vector database!
+:::
 
 ## Available Libraries by Tier
 
@@ -97,21 +98,69 @@ pdfstract chunk document.pdf --chunker recursive --overlap 50
 Use `--chunker auto` to automatically select the best available chunking method. Great for scripts that need to work across different installations!
 :::
 
-### process
+### convert-chunk
 
 Convert and chunk in one command:
 
 ```bash
 # One-step processing
-pdfstract process document.pdf --chunker semantic --size 1024
+pdfstract convert-chunk document.pdf --chunker semantic --chunk-size 1024
 
 # With specific tools
-pdfstract process document.pdf \
-  --converter marker \
+pdfstract convert-chunk document.pdf \
+  --library marker \
   --chunker semantic \
-  --size 512 \
-  --overlap 100
+  --chunk-size 512 \
+  --chunk-overlap 100
 ```
+
+### convert-chunk-embed
+
+Complete RAG pipeline: convert PDF, chunk text, and generate embeddings:
+
+```bash
+# Full pipeline with auto-selection
+pdfstract convert-chunk-embed document.pdf
+
+# With specific options
+pdfstract convert-chunk-embed document.pdf \
+  --library marker \
+  --chunker semantic \
+  --embedding sentence-transformers \
+  --chunk-size 512 \
+  --chunk-overlap 50 \
+  --output result.json
+
+# Using OpenAI embeddings
+pdfstract convert-chunk-embed document.pdf \
+  --library docling \
+  --chunker token \
+  --embedding openai \
+  --output chunks_with_vectors.json
+
+# Save converted text separately
+pdfstract convert-chunk-embed document.pdf \
+  --library marker \
+  --embedding sentence-transformers \
+  --save-converted converted_text.md
+```
+
+**Options:**
+- `--library, -l`: PDF conversion library (default: auto)
+- `--chunker, -c`: Chunking method (default: auto)
+- `--embedding, -e`: Embedding provider (default: auto)
+- `--chunk-size`: Target chunk size in tokens (default: 512)
+- `--chunk-overlap`: Overlap between chunks (default: 50)
+- `--format, -f`: Output format (markdown, text, json)
+- `--output, -o`: Save results to JSON file
+- `--save-converted`: Save converted text to separate file
+
+**Available Embedding Providers:**
+- `sentence-transformers` - Local, no API key needed
+- `openai` - Requires `OPENAI_API_KEY`
+- `azure-openai` - Requires `AZURE_OPENAI_API_KEY`
+- `google-generative` - Requires `GOOGLE_API_KEY`
+- `ollama` - Requires local Ollama daemon
 
 ### batch
 
@@ -187,6 +236,20 @@ Common converters:
 - **sentence** - Sentence-boundary aware
 - **code** - Code-aware chunking
 
+### Embedding Providers
+
+List available embedding providers:
+
+```bash
+pdfstract embeddings
+```
+
+- **sentence-transformers** - Local, no API key (default)
+- **openai** - OpenAI API
+- **azure-openai** - Azure OpenAI
+- **google-generative** - Google Gemini
+- **ollama** - Local Ollama
+
 ## Common Usage Patterns
 
 ### Convert Single Document
@@ -219,18 +282,26 @@ pdfstract batch ./reports/ --pattern "*.pdf" --chunker semantic
 
 ```bash
 # Convert and chunk for RAG
-pdfstract process document.pdf \
-  --converter docling \
+pdfstract convert-chunk document.pdf \
+  --library docling \
   --chunker semantic \
-  --size 512 \
-  --overlap 50 \
+  --chunk-size 512 \
+  --chunk-overlap 50 \
   --output chunks.json
+
+# Full pipeline with embeddings
+pdfstract convert-chunk-embed document.pdf \
+  --library marker \
+  --chunker semantic \
+  --embedding sentence-transformers \
+  --chunk-size 512 \
+  --output ready_for_vectordb.json
 
 # Batch process for RAG
 pdfstract batch ./knowledge-base/ \
-  --converter marker \
+  --library marker \
   --chunker semantic \
-  --size 1024 \
+  --chunk-size 1024 \
   --format json
 ```
 
@@ -388,7 +459,13 @@ jobs:
 
 Continue exploring PDFStract:
 
-- **[Python Module](../api/overview)** - Use in your applications
+### Feature Guides
+- **[Extract](../features/extract)** - All PDF conversion options
+- **[Chunk](../features/chunk)** - Text chunking methods
+- **[Embed](../features/embed)** - Embedding providers and configuration
+
+### Interface Guides
+- **[Python API](../api/overview)** - Use in your applications
 - **[Web UI](../web-ui/overview)** - Visual interface
 - **[Installation](../installation)** - Advanced installation options
 
