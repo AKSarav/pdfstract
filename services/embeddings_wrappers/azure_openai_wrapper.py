@@ -26,10 +26,14 @@ class AzureOpenAIEmbeddingsWrapper(BaseEmbeddingsWrapper):
     def validate_credentials(self) -> Tuple[bool, Optional[str]]:
         if not self.available:
             return False, "AzureOpenAIEmbeddings package not installed"
-        if not os.environ.get("AZURE_OPENAI_KEY") and not os.environ.get("AZURE_OPENAI_API_KEY"):
-            return False, "missing AZURE_OPENAI_KEY (or AZURE_OPENAI_API_KEY)"
+        if not os.environ.get("AZURE_OPENAI_API_KEY"):
+            return False, "missing AZURE_OPENAI_API_KEY"
         if not os.environ.get("AZURE_OPENAI_ENDPOINT"):
             return False, "missing AZURE_OPENAI_ENDPOINT"
+        if not os.environ.get("AZURE_OPENAI_EMBEDDING_MODEL"):
+            return False, "missing AZURE_OPENAI_EMBEDDING_MODEL"
+        if not os.environ.get("AZURE_OPENAI_API_VERSION"):
+            return False, "missing AZURE_OPENAI_API_VERSION"
         return True, None
 
     async def embed_texts(self, texts: List[str]) -> List[List[float]]:

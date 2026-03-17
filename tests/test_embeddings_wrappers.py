@@ -13,7 +13,7 @@ def test_base_wrapper_interface():
 
 @pytest.mark.parametrize("wrapper_path,cls_name,env_vars", [
     ("services.embeddings_wrappers.openai_wrapper", "OpenAIEmbeddingsWrapper", ["OPENAI_API_KEY"]),
-    ("services.embeddings_wrappers.azure_openai_wrapper", "AzureOpenAIEmbeddingsWrapper", ["AZURE_OPENAI_KEY","AZURE_OPENAI_ENDPOINT"]),
+    ("services.embeddings_wrappers.azure_openai_wrapper", "AzureOpenAIEmbeddingsWrapper", ["AZURE_OPENAI_API_KEY","AZURE_OPENAI_ENDPOINT","AZURE_OPENAI_EMBEDDING_MODEL","AZURE_OPENAI_API_VERSION"]),
     ("services.embeddings_wrappers.google_wrapper", "GoogleGenerativeAIEmbeddingsWrapper", ["GOOGLE_API_KEY"]),
     ("services.embeddings_wrappers.ollama_wrapper", "OllamaEmbeddingsWrapper", []),
     ("services.embeddings_wrappers.sentence_transformers_wrapper", "SentenceTransformersWrapper", []),
