@@ -1,7 +1,10 @@
 import os
+import logging
 from typing import List, Tuple, Optional
 import asyncio
 from .base import BaseEmbeddingsWrapper
+
+logger = logging.getLogger(__name__)
 
 
 class AzureOpenAIEmbeddingsWrapper(BaseEmbeddingsWrapper):
@@ -26,10 +29,14 @@ class AzureOpenAIEmbeddingsWrapper(BaseEmbeddingsWrapper):
     def validate_credentials(self) -> Tuple[bool, Optional[str]]:
         if not self.available:
             return False, "AzureOpenAIEmbeddings package not installed"
-        if not os.environ.get("AZURE_OPENAI_KEY") and not os.environ.get("AZURE_OPENAI_API_KEY"):
-            return False, "missing AZURE_OPENAI_KEY (or AZURE_OPENAI_API_KEY)"
+        if not os.environ.get("AZURE_OPENAI_API_KEY"):
+            return False, "missing AZURE_OPENAI_API_KEY"
         if not os.environ.get("AZURE_OPENAI_ENDPOINT"):
             return False, "missing AZURE_OPENAI_ENDPOINT"
+        if not os.environ.get("AZURE_OPENAI_EMBEDDING_MODEL"):
+            return False, "missing AZURE_OPENAI_EMBEDDING_MODEL"
+        if not os.environ.get("AZURE_OPENAI_API_VERSION"):
+            return False, "missing AZURE_OPENAI_API_VERSION"
         return True, None
 
     async def embed_texts(self, texts: List[str]) -> List[List[float]]:
@@ -54,7 +61,7 @@ class AzureOpenAIEmbeddingsWrapper(BaseEmbeddingsWrapper):
         if None in (api_key, endpoint, model, version):
             raise RuntimeError("Missing one of AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_EMBEDDING_MODEL, AZURE_OPENAI_API_VERSION")    
         
-        print(f"Using Azure OpenAI with endpoint {endpoint} and model {model} (version {version})")
+        logger.debug("Using Azure OpenAI with endpoint %s and model %s (version %s)", endpoint, model, version)
         
         # Import here to avoid module-level dependency
         embed_model = mod.AzureOpenAIEmbeddings(

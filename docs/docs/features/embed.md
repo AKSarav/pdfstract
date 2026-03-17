@@ -151,9 +151,6 @@ pdfstract embed-text --text "Your text to embed" --model sentence-transformers
 
 # Embed from file
 pdfstract embed-text --file document.txt --model openai --output embeddings.json
-
-# Read from stdin
-cat document.txt | pdfstract embed-text --model sentence-transformers
 ```
 
 ### Full Pipeline: Convert + Chunk + Embed

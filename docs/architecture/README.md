@@ -298,10 +298,10 @@ tests/
 ### CLI (`cli.py`)
 ```bash
 pdfstract convert <pdf> --converter marker --chunker semantic
-pdfstract chunkers list
-pdfstract chunk-text "Your text here" --chunker token --chunk-size 512
-pdfstract embeddings-list
-pdfstract embed-text "Your text" --provider openai --api-key <key>
+pdfstract chunkers
+pdfstract chunk "Your text here" --chunker token --chunk-size 512
+pdfstract embeddings
+pdfstract embed "Your text" --embedding openai
 ```
 
 ### Web API (`main.py`)

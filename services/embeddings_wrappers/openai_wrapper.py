@@ -22,7 +22,7 @@ class OpenAIEmbeddingsWrapper(BaseEmbeddingsWrapper):
     def validate_credentials(self) -> Tuple[bool, Optional[str]]:
         # OpenAI requires OPENAI_API_KEY
         if not self.available:
-            return False, "openai package not installed"
+            return False, "langchain-openai package not installed"
         if not os.environ.get("OPENAI_API_KEY"):
             return False, "missing env var OPENAI_API_KEY"
         return True, None
