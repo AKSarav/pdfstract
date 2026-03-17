@@ -1,7 +1,10 @@
 import os
+import logging
 from typing import List, Tuple, Optional
 import asyncio
 from .base import BaseEmbeddingsWrapper
+
+logger = logging.getLogger(__name__)
 
 
 class AzureOpenAIEmbeddingsWrapper(BaseEmbeddingsWrapper):
@@ -54,7 +57,7 @@ class AzureOpenAIEmbeddingsWrapper(BaseEmbeddingsWrapper):
         if None in (api_key, endpoint, model, version):
             raise RuntimeError("Missing one of AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_EMBEDDING_MODEL, AZURE_OPENAI_API_VERSION")    
         
-        print(f"Using Azure OpenAI with endpoint {endpoint} and model {model} (version {version})")
+        logger.debug("Using Azure OpenAI with endpoint %s and model %s (version %s)", endpoint, model, version)
         
         # Import here to avoid module-level dependency
         embed_model = mod.AzureOpenAIEmbeddings(
