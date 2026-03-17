@@ -147,10 +147,13 @@ print(f"Available providers: {available}")
 
 ```bash
 # Embed text from command line
-pdfstract embed "Your text to embed" --model sentence-transformers
+pdfstract embed-text --text "Your text to embed" --model sentence-transformers
 
 # Embed from file
-pdfstract embed --file document.txt --model openai --output embeddings.json
+pdfstract embed-text --file document.txt --model openai --output embeddings.json
+
+# Read from stdin
+cat document.txt | pdfstract embed-text --model sentence-transformers
 ```
 
 ### Full Pipeline: Convert + Chunk + Embed
@@ -175,7 +178,7 @@ pdfstract convert-chunk-embed document.pdf \
 ### List Available Providers
 
 ```bash
-pdfstract embeddings
+pdfstract embeddings-list
 ```
 
 ## Provider Details

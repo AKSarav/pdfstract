@@ -241,7 +241,7 @@ Common converters:
 List available embedding providers:
 
 ```bash
-pdfstract embeddings
+pdfstract embeddings-list
 ```
 
 - **sentence-transformers** - Local, no API key (default)

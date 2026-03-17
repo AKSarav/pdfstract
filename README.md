@@ -136,7 +136,7 @@ for chunk in result['chunking_result']['chunks']:
 # List available tools
 pdfstract libs
 pdfstract chunkers
-pdfstract embeddings
+pdfstract embeddings-list
 
 # Extract
 pdfstract convert document.pdf --library marker
