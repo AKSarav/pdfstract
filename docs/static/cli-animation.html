@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFStract CLI Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1e1e2e;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Consolas', monospace;
+            padding: 40px;
+        }
+
+        .terminal {
+            background: #0d0d0d;
+            border-radius: 12px;
+            padding: 0;
+            width: 580px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terminal-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .btn-red { background: #ff5f56; }
+        .btn-yellow { background: #ffbd2e; }
+        .btn-green { background: #27ca40; }
+
+        .terminal-title {
+            color: #888;
+            font-size: 13px;
+            margin-left: 8px;
+        }
+
+        .terminal-body {
+            padding: 24px 28px;
+        }
+
+        .line {
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+            line-height: 1.5;
+            min-height: 32px;
+        }
+
+        .indent {
+            padding-left: 20px;
+        }
+
+        .prompt {
+            color: #7dd3fc;
+            margin-right: 10px;
+        }
+
+        .command {
+            color: #4ade80;
+            font-weight: 600;
+        }
+
+        .subcommand {
+            color: #fbbf24;
+            margin-left: 8px;
+        }
+
+        .file {
+            color: #f472b6;
+            margin-left: 10px;
+        }
+
+        .flag {
+            color: #94a3b8;
+            width: 110px;
+            display: inline-block;
+        }
+
+        .option-container {
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            width: 200px;
+            height: 24px;
+        }
+
+        .option {
+            color: #38bdf8;
+            font-weight: 500;
+            position: absolute;
+            left: 0;
+            opacity: 0;
+            white-space: nowrap;
+        }
+
+        /* Staggered animations - library first, then chunker, then embedding */
+        
+        /* Library cycles: 0-6s visible each option */
+        .library-1 { animation: libFade1 24s infinite; }
+        .library-2 { animation: libFade2 24s infinite; }
+        .library-3 { animation: libFade3 24s infinite; }
+        .library-4 { animation: libFade4 24s infinite; }
+
+        @keyframes libFade1 {
+            0%, 2% { opacity: 0; }
+            4%, 23% { opacity: 1; }
+            25%, 100% { opacity: 0; }
+        }
+        @keyframes libFade2 {
+            0%, 25% { opacity: 0; }
+            27%, 48% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        @keyframes libFade3 {
+            0%, 50% { opacity: 0; }
+            52%, 73% { opacity: 1; }
+            75%, 100% { opacity: 0; }
+        }
+        @keyframes libFade4 {
+            0%, 75% { opacity: 0; }
+            77%, 98% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Chunker cycles: delayed by 0.3s */
+        .chunker-1 { animation: chunkFade1 24s infinite; animation-delay: 0.3s; }
+        .chunker-2 { animation: chunkFade2 24s infinite; animation-delay: 0.3s; }
+        .chunker-3 { animation: chunkFade3 24s infinite; animation-delay: 0.3s; }
+        .chunker-4 { animation: chunkFade4 24s infinite; animation-delay: 0.3s; }
+
+        @keyframes chunkFade1 {
+            0%, 2% { opacity: 0; }
+            4%, 23% { opacity: 1; }
+            25%, 100% { opacity: 0; }
+        }
+        @keyframes chunkFade2 {
+            0%, 25% { opacity: 0; }
+            27%, 48% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        @keyframes chunkFade3 {
+            0%, 50% { opacity: 0; }
+            52%, 73% { opacity: 1; }
+            75%, 100% { opacity: 0; }
+        }
+        @keyframes chunkFade4 {
+            0%, 75% { opacity: 0; }
+            77%, 98% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Embedding cycles: delayed by 0.6s */
+        .embed-1 { animation: embedFade1 24s infinite; animation-delay: 0.6s; }
+        .embed-2 { animation: embedFade2 24s infinite; animation-delay: 0.6s; }
+        .embed-3 { animation: embedFade3 24s infinite; animation-delay: 0.6s; }
+        .embed-4 { animation: embedFade4 24s infinite; animation-delay: 0.6s; }
+
+        @keyframes embedFade1 {
+            0%, 2% { opacity: 0; }
+            4%, 23% { opacity: 1; }
+            25%, 100% { opacity: 0; }
+        }
+        @keyframes embedFade2 {
+            0%, 25% { opacity: 0; }
+            27%, 48% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        @keyframes embedFade3 {
+            0%, 50% { opacity: 0; }
+            52%, 73% { opacity: 1; }
+            75%, 100% { opacity: 0; }
+        }
+        @keyframes embedFade4 {
+            0%, 75% { opacity: 0; }
+            77%, 98% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 9px;
+            height: 18px;
+            background: #7dd3fc;
+            margin-left: 4px;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .tagline {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .tagline strong {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-btn btn-red"></div>
+            <div class="terminal-btn btn-yellow"></div>
+            <div class="terminal-btn btn-green"></div>
+            <span class="terminal-title">pdfstract</span>
+        </div>
+        <div class="terminal-body">
+            <!-- Line 1: command + file -->
+            <div class="line">
+                <span class="prompt">$</span>
+                <span class="command">pdfstract</span>
+                <span class="subcommand">convert-chunk-embed</span>
+                <span class="file">doc.pdf</span>
+            </div>
+            
+            <!-- Line 2: library -->
+            <div class="line indent">
+                <span class="flag">--library</span>
+                <span class="option-container">
+                    <span class="option library-1">marker</span>
+                    <span class="option library-2">docling</span>
+                    <span class="option library-3">pymupdf4llm</span>
+                    <span class="option library-4">unstructured</span>
+                </span>
+            </div>
+            
+            <!-- Line 3: chunker -->
+            <div class="line indent">
+                <span class="flag">--chunker</span>
+                <span class="option-container">
+                    <span class="option chunker-1">semantic</span>
+                    <span class="option chunker-2">token</span>
+                    <span class="option chunker-3">recursive</span>
+                    <span class="option chunker-4">sentence</span>
+                </span>
+            </div>
+            
+            <!-- Line 4: embedding -->
+            <div class="line indent">
+                <span class="flag">--embedding</span>
+                <span class="option-container">
+                    <span class="option embed-1">openai</span>
+                    <span class="option embed-2">sentence-transformers</span>
+                    <span class="option embed-3">ollama</span>
+                    <span class="option embed-4">azure-openai</span>
+                </span>
+                <span class="cursor"></span>
+            </div>
+            
+            <p class="tagline"><strong>One unified API.</strong> Switch with a single parameter.</p>
+        </div>
+    </div>
+</body>
+</html>

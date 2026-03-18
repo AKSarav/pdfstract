@@ -1206,7 +1206,12 @@ def convert_chunk_embed(
 
 def main():
     """Main entry point for the CLI"""
-    pdfstract(standalone_mode=False)
+    try:
+        pdfstract(standalone_mode=False)
+    except click.exceptions.NoArgsIsHelpError:
+        # When no args provided, show help instead of traceback
+        with click.Context(pdfstract) as ctx:
+            click.echo(pdfstract.get_help(ctx))
 
 
 if __name__ == '__main__':
