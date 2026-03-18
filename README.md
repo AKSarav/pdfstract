@@ -61,7 +61,7 @@ PDFStract lets you **swap, compare, and automate** your data preparation strateg
 
 Switch any component with a single parameter change. No code refactoring needed.
 
-![animation](pdfstract-animation.gif)
+![animation](uploads/pdfstract-animation.gif)
 
 ## Python API
 
