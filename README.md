@@ -17,7 +17,7 @@
 
 **One unified API.** Switch between 10+ extraction libraries, 10+ chunking methods, and multiple embedding providers with a single parameter change. Focus on your RAG outcomes, not library dependencies.
 
-![alt text](uploads/HeaderImage.png)
+![animation](uploads/pdfstract-animation.gif)
 
 ## Quick Start
 
@@ -61,7 +61,6 @@ PDFStract lets you **swap, compare, and automate** your data preparation strateg
 
 Switch any component with a single parameter change. No code refactoring needed.
 
-![animation](uploads/pdfstract-animation.gif)
 
 ## Python API
 
